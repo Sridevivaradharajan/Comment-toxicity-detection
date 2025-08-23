@@ -14,13 +14,16 @@ import json
 # Load Model and Tokenizer
 # ---------------------------
 @st.cache_resource
-def load_model():
-    try:
-        model = tf.keras.models.load_model("bilstm_model.h5")
-        return model
-    except Exception as e:
-        st.error(f"Error loading model: {e}")
-        return None
+def load_bilstm_model():
+    model_path = "bilstm_model.h5"
+
+    # Download from Google Drive if not already downloaded
+    if not os.path.exists(model_path):
+        with st.spinner("Downloading BiLSTM model... Please wait."):
+            url = "https://drive.google.com/uc?id=YOUR_FILE_ID"  # replace with your file ID
+            gdown.download(url, model_path, quiet=False)
+
+    return load_model(model_path)
 
 @st.cache_resource
 def load_tokenizer():
@@ -678,3 +681,4 @@ st.markdown("""
     <p><em>Threshold: {threshold} | Max Length: {max_len}</em></p>
 </div>
 """.format(threshold=THRESHOLD, max_len=MAX_LEN), unsafe_allow_html=True)
+
