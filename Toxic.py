@@ -73,33 +73,42 @@ def predict_toxicity(text, return_probabilities=False):
         return dict(zip(labels, binary_preds))
 
 def get_model_metrics():
-    """Extract model architecture information (no training history for loaded models)"""
     try:
-        # Get model architecture info
+        # Helper to format shapes properly
+        def format_shape(shape):
+            if shape is None:
+                return None
+            if isinstance(shape, list):
+                return [tuple("Batch" if dim is None else dim for dim in s) for s in shape]
+            return tuple("Batch" if dim is None else dim for dim in shape)
+
+        # Model info
         model_info = {
             "Model Type": "BiLSTM",
             "Total Parameters": model.count_params(),
-            "Trainable Parameters": sum([tf.keras.backend.count_params(w) for w in model.trainable_weights]),
-            "Non-trainable Parameters": sum([tf.keras.backend.count_params(w) for w in model.non_trainable_weights]),
-            "Input Shape": str(model.input_shape),
-            "Output Shape": str(model.output_shape),
+            "Trainable Parameters": int(sum(tf.keras.backend.count_params(w) for w in model.trainable_weights)),
+            "Non-trainable Parameters": int(sum(tf.keras.backend.count_params(w) for w in model.non_trainable_weights)),
+            "Input Shape": format_shape(model.input_shape) if hasattr(model, 'input_shape') else None,
+            "Output Shape": format_shape(model.output_shape) if hasattr(model, 'output_shape') else None,
             "Number of Layers": len(model.layers),
-            "Optimizer": model.optimizer.__class__.__name__ if hasattr(model, 'optimizer') else "Unknown",
-            "Loss Function": str(model.loss) if hasattr(model, 'loss') else "Unknown"
+            "Optimizer": model.optimizer.get_config()['name'] if hasattr(model, 'optimizer') else "Unknown",
+            "Loss Function": model.loss if isinstance(model.loss, str) else getattr(model.loss, '__name__', str(model.loss))
         }
-        
-        # Get layer information
+
+        # Layer info
         layer_info = []
         for i, layer in enumerate(model.layers):
             layer_info.append({
-                "Layer": i+1,
+                "Layer": i + 1,
                 "Name": layer.name,
                 "Type": layer.__class__.__name__,
-                "Output Shape": str(layer.output_shape) if hasattr(layer, 'output_shape') else "N/A",
-                "Parameters": layer.count_params()
+                "Parameters": layer.count_params(),
+                "Input Shape": format_shape(getattr(layer, "input_shape", None)),
+                "Output Shape": format_shape(getattr(layer, "output_shape", None)),
             })
-        
+
         return model_info, layer_info
+
     except Exception as e:
         st.error(f"Error extracting model metrics: {e}")
         return {}, []
@@ -682,6 +691,7 @@ st.markdown("""
     <p><em>Threshold: {threshold} | Max Length: {max_len}</em></p>
 </div>
 """.format(threshold=THRESHOLD, max_len=MAX_LEN), unsafe_allow_html=True)
+
 
 
 
