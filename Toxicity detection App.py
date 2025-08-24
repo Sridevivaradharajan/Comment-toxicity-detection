@@ -85,40 +85,40 @@ st.markdown("""
     
     /* Feature Cards with enhanced styling for lavender background */
     .feature-card {
-        background: rgba(255, 255, 255, 0.98);
-        border-radius: 15px;
-        padding: 30px;
-        margin: 15px 0;
-        box-shadow: 0 8px 25px rgba(147, 112, 219, 0.15);
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        border: 1px solid rgba(147, 112, 219, 0.2);
-        backdrop-filter: blur(10px);
+    background: linear-gradient(135deg, #f0f0ff 0%, #e6e6ff 100%); /* Light lavender gradient */
+    border-radius: 15px;
+    padding: 30px;
+    margin: 15px 0;
+    box-shadow: 0 8px 25px rgba(147, 112, 219, 0.15); /* Slightly stronger shadow with purple tint */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid rgba(147, 112, 219, 0.2); /* Slightly more visible border */
     }
-    
+
     .feature-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 15px 40px rgba(147, 112, 219, 0.25);
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(147, 112, 219, 0.25); /* Enhanced hover shadow */
     }
-    
+
     .feature-icon {
-        font-size: 40px;
-        margin-bottom: 15px;
-        text-align: center;
+    font-size: 40px;
+    margin-bottom: 15px;
+    text-align: center;
+    color: #9370DB; /* Purple color for icons */
     }
-    
+
     .feature-title {
-        color: #9370DB;
-        font-size: 22px;
-        font-weight: 600;
-        margin-bottom: 15px;
-        text-align: center;
+    color: #6B46C1; /* Slightly darker purple for better contrast */
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    text-align: center;
     }
-    
+
     .feature-description {
-        color: #666;
-        font-size: 16px;
-        line-height: 1.6;
-        text-align: center;
+    color: #4B5563; /* Darker gray for better readability on light background */
+    font-size: 16px;
+    line-height: 1.6;
+    text-align: center;
     }
     
     /* Stats Container */
@@ -1195,3 +1195,4 @@ elif current_page == 'Test Cases':
                         st.error(f"**TOXIC** - {toxic_count} categories detected!")
                     else:
                         st.success("**CLEAN** - No toxicity detected!")
+
