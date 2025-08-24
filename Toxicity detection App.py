@@ -13,10 +13,7 @@ import gdown
 import json
 from tensorflow.keras.models import load_model
 
-
-# ---------------------------
 # Load Model and Tokenizer
-# ---------------------------
 @st.cache_resource
 def load_bilstm_model():
     model_path = "bilstm_model.h5"
@@ -29,26 +26,22 @@ def load_bilstm_model():
             gdown.download(url, model_path, quiet=False)
 
 @st.cache_resource
+@st.cache_resource
 def load_tokenizer():
     tokenizer_path = "tokenizer.pkl"
-    
-    # Add your tokenizer Google Drive URL here
-    tokenizer_url = "https://drive.google.com/file/d/1psCM-sISb3ToTc6IYhhw3nSLWqaTVAJm/view?usp=sharing" 
-    
-    # Download from Google Drive if not already downloaded
-    if not os.path.exists(tokenizer_path) and tokenizer_url != "https://drive.google.com/file/d/1psCM-sISb3ToTc6IYhhw3nSLWqaTVAJm/view?usp=sharing":
-        with st.spinner("Downloading tokenizer... Please wait."):
-            file_id = tokenizer_url.split('/d/')[1].split('/')[0]
-            download_url = f'https://drive.google.com/uc?id={file_id}'
-            gdown.download(download_url, tokenizer_path, quiet=False)
-    
-    try:
-        with open(tokenizer_path, "rb") as handle:
-            tokenizer = pickle.load(handle)
-        return tokenizer
-    except Exception as e:
-        st.error(f"Error loading tokenizer: {e}")
-        return None
+
+    if not os.path.exists(tokenizer_path):
+        with st.spinner("⬇️ Downloading tokenizer... Please wait."):
+            # Replace with your tokenizer file_id
+            file_id = "YOUR_TOKENIZER_FILE_ID"
+            url = f"https://drive.google.com/uc?id={file_id}"
+            gdown.download(url, tokenizer_path, quiet=False)
+
+    # Load the pickle tokenizer
+    with open(tokenizer_path, "rb") as handle:
+        tokenizer = pickle.load(handle)
+
+    return tokenizer
 
 # Load model and tokenizer
 model = load_bilstm_model()
@@ -705,6 +698,7 @@ st.markdown("""
     <p><em>Threshold: {threshold} | Max Length: {max_len}</em></p>
 </div>
 """.format(threshold=THRESHOLD, max_len=MAX_LEN), unsafe_allow_html=True)
+
 
 
 
