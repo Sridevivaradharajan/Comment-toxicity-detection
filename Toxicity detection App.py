@@ -764,7 +764,7 @@ if current_page == 'Home':
         """, unsafe_allow_html=True)
 
 # LIVE DETECTION PAGE
-if current_page == 'Live Detection':
+elif current_page == 'Live Detection':
 st.markdown("*Enter one or more comments (each line = one comment)*")
 user_input = st.text_area("Type comments below:", height=180, placeholder="Enter one comment per line...")
 
@@ -1206,6 +1206,7 @@ elif current_page == 'Test Cases':
                         st.error(f"**TOXIC** - {toxic_count} categories detected!")
                     else:
                         st.success("**CLEAN** - No toxicity detected!")
+
 
 
 
