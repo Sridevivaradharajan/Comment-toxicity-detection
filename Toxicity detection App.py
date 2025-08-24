@@ -27,18 +27,17 @@ st.markdown("""
     }
     
     /* Streamlit main container background */
+    /* Global background stays lavender */
     .stApp {
         background-color: #DDD4FF !important;
     }
-    
-    /* Main content area - Pink Gradient Container */
+
+    /* Keep block container transparent so lavender shows */
     .main .block-container {
-        background: linear-gradient(135deg, #F8BBD0 0%, #F48FB1 100%) !important;
+        background: transparent !important;
         border-radius: 15px;
         padding: 2rem;
         margin: 1rem auto;
-        box-shadow: 0 8px 25px rgba(244, 143, 177, 0.2);
-        border: 1px solid rgba(244, 143, 177, 0.3);
     }
     
     /* Navigation Styles */
@@ -1213,6 +1212,7 @@ elif current_page == 'Test Cases':
                         st.error(f"**TOXIC** - {toxic_count} categories detected!")
                     else:
                         st.success("**CLEAN** - No toxicity detected!")
+
 
 
 
