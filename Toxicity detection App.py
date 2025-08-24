@@ -36,7 +36,7 @@ def load_tokenizer():
     tokenizer_url = "https://drive.google.com/file/d/1psCM-sISb3ToTc6IYhhw3nSLWqaTVAJm/view?usp=sharing" 
     
     # Download from Google Drive if not already downloaded
-    if not os.path.exists(tokenizer_path) and tokenizer_url != "YOUR_TOKENIZER_GOOGLE_DRIVE_URL":
+    if not os.path.exists(tokenizer_path) and tokenizer_url != "https://drive.google.com/file/d/1psCM-sISb3ToTc6IYhhw3nSLWqaTVAJm/view?usp=sharing":
         with st.spinner("Downloading tokenizer... Please wait."):
             file_id = tokenizer_url.split('/d/')[1].split('/')[0]
             download_url = f'https://drive.google.com/uc?id={file_id}'
@@ -705,6 +705,7 @@ st.markdown("""
     <p><em>Threshold: {threshold} | Max Length: {max_len}</em></p>
 </div>
 """.format(threshold=THRESHOLD, max_len=MAX_LEN), unsafe_allow_html=True)
+
 
 
 
