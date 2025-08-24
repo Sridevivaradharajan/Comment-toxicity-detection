@@ -430,7 +430,7 @@ if current_page == 'Home':
 # ---------------------------
 elif current_page == 'Live Detection':
     st.header("⚡ Real-time Toxicity Detection")
-    st.markdown("*Enter any comment below to get instant binary toxicity predictions*")
+    st.markdown("*Enter any comment below to get instant toxicity predictions*")
     
     user_input = st.text_area("Type a comment below:", height=120, placeholder="Enter your comment here...")
     
@@ -486,7 +486,7 @@ elif current_page == 'Live Detection':
 # ---------------------------
 elif current_page == 'Bulk Analysis':
     st.header("📊 Bulk CSV Analysis")
-    st.markdown("*Upload a CSV file with a 'comment_text' column to get binary toxicity predictions (1/0) for all comments.*")
+    st.markdown("*Upload a CSV file with 'text'column to get predictions for all comments.*")
     
     uploaded_file = st.file_uploader("Upload CSV file", type=["csv"], help="CSV must contain a column named 'comment_text'")
     
@@ -494,8 +494,8 @@ elif current_page == 'Bulk Analysis':
         try:
             data = pd.read_csv(uploaded_file)
             
-            if "comment_text" not in data.columns:
-                st.error("CSV must have a column named 'comment_text'")
+            if "text" not in data.columns:
+                st.error("CSV must have a column named 'text'")
                 st.info("Available columns: " + ", ".join(data.columns.tolist()))
             else:
                 st.success(f"File uploaded successfully! Found **{len(data)}** rows.")
@@ -890,4 +890,5 @@ elif current_page == 'Test Cases':
                         st.success("**CLEAN** - No toxicity detected!")
     
     st.markdown('</div>', unsafe_allow_html=True)
+
 
