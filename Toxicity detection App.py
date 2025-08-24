@@ -21,10 +21,10 @@ from tensorflow.keras.models import load_model
 def load_bilstm_model():
     model_path = "bilstm_model.h5"
 
-    # Download from Google Drive if not already downloaded
     if not os.path.exists(model_path):
         with st.spinner("Downloading BiLSTM model... Please wait."):
-            url = "https://drive.google.com/file/d/1kTfFlFAfCAiUdZO5MgCF0N0uxVNd0ZZn/view?usp=sharing" 
+            # Use direct download link
+            url = "https://drive.google.com/file/d/1kTfFlFAfCAiUdZO5MgCF0N0uxVNd0ZZn/view?usp=sharing"
             gdown.download(url, model_path, quiet=False)
 
     return load_model(model_path)
@@ -706,6 +706,7 @@ st.markdown("""
     <p><em>Threshold: {threshold} | Max Length: {max_len}</em></p>
 </div>
 """.format(threshold=THRESHOLD, max_len=MAX_LEN), unsafe_allow_html=True)
+
 
 
 
