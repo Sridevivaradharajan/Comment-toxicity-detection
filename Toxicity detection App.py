@@ -13,7 +13,6 @@ import gdown
 import json
 from tensorflow.keras.models import load_model
 
-# Load Model and Tokenizer
 @st.cache_resource
 def load_bilstm_model():
     model_path = "bilstm_model.h5"
@@ -25,27 +24,28 @@ def load_bilstm_model():
             url = f"https://drive.google.com/uc?id={file_id}"
             gdown.download(url, model_path, quiet=False)
 
+    # ✅ return loaded model
+    return load_model(model_path)
+
+# Load Tokenizer
 @st.cache_resource
 def load_tokenizer():
     tokenizer_path = "tokenizer.pkl"
 
     if not os.path.exists(tokenizer_path):
         with st.spinner("⬇️ Downloading tokenizer... Please wait."):
-            # ✅ Correct direct download link
-            file_id = "1psCM-sISb3ToTc6IYhhw3nSLWqaTVAJm"  # your actual file ID
+            file_id = "1psCM-sISb3ToTc6IYhhw3nSLWqaTVAJm"
             url = f"https://drive.google.com/uc?id={file_id}"
             gdown.download(url, tokenizer_path, quiet=False)
 
-    # ✅ Debugging step: check size
+    # Debugging check
     if os.path.exists(tokenizer_path):
         st.write("✅ Tokenizer file size:", os.path.getsize(tokenizer_path), "bytes")
 
-    # Load the pickle tokenizer
     with open(tokenizer_path, "rb") as handle:
         tokenizer = pickle.load(handle)
 
     return tokenizer
-
 
 # Load model and tokenizer
 model = load_bilstm_model()
@@ -53,10 +53,10 @@ tokenizer = load_tokenizer()
 MAX_LEN = 122  # Based on preprocessing
 THRESHOLD = 0.5  # Threshold for binary classification
 
-# Check if model and tokenizer loaded successfully
 if model is None or tokenizer is None:
     st.error("Failed to load model or tokenizer. Please check if the files exist.")
     st.stop()
+
 
 # ---------------------------
 # Helper Functions
@@ -702,6 +702,7 @@ st.markdown("""
     <p><em>Threshold: {threshold} | Max Length: {max_len}</em></p>
 </div>
 """.format(threshold=THRESHOLD, max_len=MAX_LEN), unsafe_allow_html=True)
+
 
 
 
