@@ -31,10 +31,14 @@ def load_tokenizer():
 
     if not os.path.exists(tokenizer_path):
         with st.spinner("⬇️ Downloading tokenizer... Please wait."):
-            # ✅ Correct direct download link using uc?id=
-            file_id = "1psCM-sISb3ToTc6IYhhw3nSLWqaTVAJm"
+            # ✅ Correct direct download link
+            file_id = "1psCM-sISb3ToTc6IYhhw3nSLWqaTVAJm"  # your actual file ID
             url = f"https://drive.google.com/uc?id={file_id}"
             gdown.download(url, tokenizer_path, quiet=False)
+
+    # ✅ Debugging step: check size
+    if os.path.exists(tokenizer_path):
+        st.write("✅ Tokenizer file size:", os.path.getsize(tokenizer_path), "bytes")
 
     # Load the pickle tokenizer
     with open(tokenizer_path, "rb") as handle:
@@ -698,6 +702,7 @@ st.markdown("""
     <p><em>Threshold: {threshold} | Max Length: {max_len}</em></p>
 </div>
 """.format(threshold=THRESHOLD, max_len=MAX_LEN), unsafe_allow_html=True)
+
 
 
 
