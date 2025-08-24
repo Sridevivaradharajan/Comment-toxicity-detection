@@ -10,6 +10,8 @@ from sklearn.metrics import classification_report, accuracy_score, precision_rec
 import io
 import gdown
 import json
+from tensorflow.keras.models import load_model
+
 
 # ---------------------------
 # Load Model and Tokenizer
@@ -703,6 +705,7 @@ st.markdown("""
     <p><em>Threshold: {threshold} | Max Length: {max_len}</em></p>
 </div>
 """.format(threshold=THRESHOLD, max_len=MAX_LEN), unsafe_allow_html=True)
+
 
 
 
