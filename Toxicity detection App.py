@@ -27,9 +27,22 @@ def load_bilstm_model():
     return load_model(model_path)
 
 @st.cache_resource
+@st.cache_resource
 def load_tokenizer():
+    tokenizer_path = "tokenizer.pkl"
+    
+    # Add your tokenizer Google Drive URL here
+    tokenizer_url = "YOUR_TOKENIZER_GOOGLE_DRIVE_URL"  # Replace with actual URL
+    
+    # Download from Google Drive if not already downloaded
+    if not os.path.exists(tokenizer_path) and tokenizer_url != "YOUR_TOKENIZER_GOOGLE_DRIVE_URL":
+        with st.spinner("Downloading tokenizer... Please wait."):
+            file_id = tokenizer_url.split('/d/')[1].split('/')[0]
+            download_url = f'https://drive.google.com/uc?id={file_id}'
+            gdown.download(download_url, tokenizer_path, quiet=False)
+    
     try:
-        with open("tokenizer.pkl", "rb") as handle:
+        with open(tokenizer_path, "rb") as handle:
             tokenizer = pickle.load(handle)
         return tokenizer
     except Exception as e:
@@ -691,6 +704,7 @@ st.markdown("""
     <p><em>Threshold: {threshold} | Max Length: {max_len}</em></p>
 </div>
 """.format(threshold=THRESHOLD, max_len=MAX_LEN), unsafe_allow_html=True)
+
 
 
 
