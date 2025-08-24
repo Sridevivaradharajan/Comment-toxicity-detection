@@ -51,7 +51,7 @@ def load_tokenizer():
         return None
 
 # Load model and tokenizer
-model = load_model()
+model = load_bilstm_model()
 tokenizer = load_tokenizer()
 MAX_LEN = 122  # Based on preprocessing
 THRESHOLD = 0.5  # Threshold for binary classification
@@ -705,6 +705,7 @@ st.markdown("""
     <p><em>Threshold: {threshold} | Max Length: {max_len}</em></p>
 </div>
 """.format(threshold=THRESHOLD, max_len=MAX_LEN), unsafe_allow_html=True)
+
 
 
 
