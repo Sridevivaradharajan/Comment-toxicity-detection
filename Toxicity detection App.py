@@ -15,7 +15,7 @@ from tensorflow.keras.models import load_model
 
 st.set_page_config(page_title="Toxic Comment Classifier", layout="wide")
 
-# Add CSS styling with light lavender background
+# Add CSS styling with light lavender background and pink accents
 st.markdown("""
 <style>
     /* Import Google Fonts */
@@ -42,9 +42,9 @@ st.markdown("""
         box-shadow: 0 4px 20px rgba(147, 112, 219, 0.1);
     }
     
-    /* Navigation Styles */
+    /* Navigation Styles - Pink gradient */
     .nav-title {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         color: white;
         padding: 20px;
         border-radius: 15px;
@@ -52,19 +52,19 @@ st.markdown("""
         font-size: 28px;
         font-weight: 700;
         margin-bottom: 30px;
-        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        box-shadow: 0 8px 25px rgba(240, 147, 251, 0.3);
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     
-    /* Hero Section */
+    /* Hero Section - Pink gradient */
     .hero-section {
-        background: linear-gradient(135deg, #9370DB 0%, #8A2BE2 100%);
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         color: white;
         padding: 60px 40px;
         border-radius: 20px;
         text-align: center;
         margin: 30px 0;
-        box-shadow: 0 15px 35px rgba(147, 112, 219, 0.3);
+        box-shadow: 0 15px 35px rgba(240, 147, 251, 0.3);
     }
     
     .hero-title {
@@ -83,42 +83,43 @@ st.markdown("""
         opacity: 0.95;
     }
     
-    /* Feature Cards with enhanced styling for lavender background */
+    /* Feature Cards - Pink gradient background */
     .feature-card {
-    background: linear-gradient(135deg, #f0f0ff 0%, #e6e6ff 100%); /* Light lavender gradient */
-    border-radius: 15px;
-    padding: 30px;
-    margin: 15px 0;
-    box-shadow: 0 8px 25px rgba(147, 112, 219, 0.15); /* Slightly stronger shadow with purple tint */
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    border: 1px solid rgba(147, 112, 219, 0.2); /* Slightly more visible border */
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); /* Pink gradient to match System Performance */
+        color: white; /* White text for better contrast */
+        border-radius: 15px;
+        padding: 30px;
+        margin: 15px 0;
+        box-shadow: 0 8px 25px rgba(240, 147, 251, 0.3);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
     .feature-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 40px rgba(147, 112, 219, 0.25); /* Enhanced hover shadow */
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(240, 147, 251, 0.4);
     }
 
     .feature-icon {
-    font-size: 40px;
-    margin-bottom: 15px;
-    text-align: center;
-    color: #9370DB; /* Purple color for icons */
+        font-size: 40px;
+        margin-bottom: 15px;
+        text-align: center;
+        color: white;
     }
 
     .feature-title {
-    color: #6B46C1; /* Slightly darker purple for better contrast */
-    font-size: 22px;
-    font-weight: 600;
-    margin-bottom: 15px;
-    text-align: center;
+        color: white;
+        font-size: 22px;
+        font-weight: 600;
+        margin-bottom: 15px;
+        text-align: center;
     }
 
     .feature-description {
-    color: #4B5563; /* Darker gray for better readability on light background */
-    font-size: 16px;
-    line-height: 1.6;
-    text-align: center;
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 16px;
+        line-height: 1.6;
+        text-align: center;
     }
     
     /* Stats Container */
@@ -160,22 +161,22 @@ st.markdown("""
         letter-spacing: 1px;
     }
     
-    /* Custom Button Styles */
+    /* Custom Button Styles - Pink gradient */
     .stButton > button {
-        background: linear-gradient(135deg, #9370DB 0%, #8A2BE2 100%);
-        color: white;
-        border: none;
-        border-radius: 10px;
-        padding: 12px 24px;
-        font-weight: 500;
-        font-size: 16px;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(147, 112, 219, 0.3);
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 10px !important;
+        padding: 12px 24px !important;
+        font-weight: 500 !important;
+        font-size: 16px !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3) !important;
     }
     
     .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(147, 112, 219, 0.4);
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 25px rgba(240, 147, 251, 0.4) !important;
     }
     
     /* Alert Styles */
@@ -186,18 +187,18 @@ st.markdown("""
         background-color: rgba(255, 255, 255, 0.9) !important;
     }
     
-    /* Metric Styles */
+    /* Metric Styles - Pink accent */
     .metric-container {
         background: rgba(255, 255, 255, 0.95);
         border-radius: 10px;
         padding: 20px;
-        box-shadow: 0 4px 12px rgba(147, 112, 219, 0.1);
-        border: 1px solid rgba(147, 112, 219, 0.2);
+        box-shadow: 0 4px 12px rgba(240, 147, 251, 0.1);
+        border: 1px solid rgba(240, 147, 251, 0.2);
     }
     
-    /* Progress Bar */
+    /* Progress Bar - Pink gradient */
     .stProgress .st-bo {
-        background: linear-gradient(135deg, #9370DB 0%, #8A2BE2 100%);
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
     }
     
     /* Sidebar with lavender theme */
@@ -205,14 +206,14 @@ st.markdown("""
         background: linear-gradient(180deg, #F8F6FF 0%, #F0EBFF 100%) !important;
     }
     
-    /* Headers */
+    /* Headers with pink underline */
     h1, h2, h3 {
         color: #4A4A4A;
         font-weight: 600;
     }
     
     h1 {
-        border-bottom: 3px solid #9370DB;
+        border-bottom: 3px solid #f093fb;
         padding-bottom: 10px;
     }
     
@@ -228,7 +229,7 @@ st.markdown("""
     .stFileUploader {
         background: rgba(255, 255, 255, 0.9);
         border-radius: 10px;
-        border: 2px dashed #9370DB;
+        border: 2px dashed #f093fb;
         padding: 20px;
         backdrop-filter: blur(5px);
     }
@@ -246,16 +247,16 @@ st.markdown("""
     
     .stTextArea > div > div > textarea:focus,
     .stTextInput > div > div > input:focus {
-        border-color: #9370DB;
-        box-shadow: 0 0 0 3px rgba(147, 112, 219, 0.1);
+        border-color: #f093fb;
+        box-shadow: 0 0 0 3px rgba(240, 147, 251, 0.1);
     }
     
-    /* Expander */
+    /* Expander header - Pink gradient */
     .streamlit-expanderHeader {
-        background: linear-gradient(135deg, #9370DB 0%, #8A2BE2 100%);
-        color: white;
-        border-radius: 10px;
-        font-weight: 500;
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+        color: white !important;
+        border-radius: 10px !important;
+        font-weight: 500 !important;
     }
     
     .streamlit-expanderContent {
@@ -306,6 +307,19 @@ st.markdown("""
     .stWarning {
         background-color: rgba(255, 243, 205, 0.9) !important;
         border-radius: 10px;
+    }
+    
+    /* Get Started section buttons */
+    .get-started-button {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+        color: white !important;
+        padding: 15px 25px !important;
+        border-radius: 25px !important;
+        font-weight: 500 !important;
+        box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3) !important;
+        border: none !important;
+        display: inline-block !important;
+        text-decoration: none !important;
     }
     
     /* Responsive Design */
@@ -1195,4 +1209,5 @@ elif current_page == 'Test Cases':
                         st.error(f"**TOXIC** - {toxic_count} categories detected!")
                     else:
                         st.success("**CLEAN** - No toxicity detected!")
+
 
