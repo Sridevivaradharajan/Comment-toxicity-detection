@@ -600,7 +600,7 @@ except Exception as e:
 
 # Navigation System
 def render_navigation():
-    st.markdown('<div class="nav-title">🔬 Toxic Comment Detection System</div>', unsafe_allow_html=True)
+    st.markdown('<div class="nav-title">Toxic Comment Detection System</div>', unsafe_allow_html=True)
     
     # Navigation buttons
     pages = ['Home', 'Live Detection', 'Bulk Analysis', 'Model Insights', 'Test Cases']
@@ -1205,6 +1205,7 @@ elif current_page == 'Test Cases':
                         st.error(f"**TOXIC** - {toxic_count} categories detected!")
                     else:
                         st.success("**CLEAN** - No toxicity detected!")
+
 
 
 
