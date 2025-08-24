@@ -13,6 +13,8 @@ import gdown
 import json
 from tensorflow.keras.models import load_model
 
+st.set_page_config(page_title="Toxic Comment Classifier", layout="wide")
+
 @st.cache_resource
 def load_bilstm_model():
     model_path = "bilstm_model.h5"
@@ -210,7 +212,6 @@ def evaluate_model_performance():
     }
 
 # Streamlit UI
-st.set_page_config(page_title="Toxic Comment Classifier", layout="wide")
 st.title("📝 Toxic Comment Detection App")
 st.markdown("*Real-time toxicity detection with binary classification (1 = Toxic, 0 = Non-toxic)*")
 st.markdown("---")
@@ -689,6 +690,7 @@ st.markdown("""
     <p><em>Threshold: {threshold} | Max Length: {max_len}</em></p>
 </div>
 """.format(threshold=THRESHOLD, max_len=MAX_LEN), unsafe_allow_html=True)
+
 
 
 
