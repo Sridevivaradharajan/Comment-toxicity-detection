@@ -41,9 +41,6 @@ def load_tokenizer():
             gdown.download(url, tokenizer_path, quiet=False)
 
     # Debugging check
-    if os.path.exists(tokenizer_path):
-        st.write("✅ Tokenizer file size:", os.path.getsize(tokenizer_path), "bytes")
-
     with open(tokenizer_path, "rb") as handle:
         tokenizer = pickle.load(handle)
 
@@ -433,7 +430,7 @@ if current_page == 'Home':
 # ---------------------------
 elif current_page == 'Live Detection':
     st.header("⚡ Real-time Toxicity Detection")
-    st.markdown("*Enter any comment below to get instant binary toxicity predictions (1 = Toxic, 0 = Non-toxic)*")
+    st.markdown("*Enter any comment below to get instant binary toxicity predictions*")
     
     user_input = st.text_area("Type a comment below:", height=120, placeholder="Enter your comment here...")
     
@@ -893,3 +890,4 @@ elif current_page == 'Test Cases':
                         st.success("**CLEAN** - No toxicity detected!")
     
     st.markdown('</div>', unsafe_allow_html=True)
+
