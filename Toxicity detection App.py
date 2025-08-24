@@ -515,17 +515,10 @@ try:
     model, tokenizer = initialize_model()
     MAX_LEN = 122  # Based on preprocessing
     THRESHOLD = 0.5  # Threshold for binary classification
-    
-    if model is None or tokenizer is None:
-        st.error("❌ Failed to load model or tokenizer. Please check if the files exist.")
-        st.stop()
-    else:
-        st.success("✅ Model and tokenizer loaded successfully!")
         
 except Exception as e:
-    st.error(f"❌ Error initializing model: {str(e)}")
-    st.info("📝 Note: Model will be downloaded on first run. This may take a few minutes.")
-    st.stop()
+    st.error(f"Error initializing model: {str(e)}")
+    st.info("Note: Model will be downloaded on first run. This may take a few minutes.")
 
 # Navigation System
 def render_navigation():
@@ -552,9 +545,7 @@ current_page = render_navigation()
 # Add some spacing
 st.markdown("<br>", unsafe_allow_html=True)
 
-# ---------------------------
 # HOME PAGE
-# ---------------------------
 if current_page == 'Home':
     # Hero Section
     st.markdown("""
@@ -694,9 +685,7 @@ if current_page == 'Home':
         </div>
         """, unsafe_allow_html=True)
 
-# ---------------------------
 # LIVE DETECTION PAGE
-# ---------------------------
 elif current_page == 'Live Detection':
     st.header("⚡ Real-time Toxicity Detection")
     st.markdown("*Enter any comment below to get instant toxicity predictions*")
@@ -748,9 +737,7 @@ elif current_page == 'Live Detection':
             else:
                 st.success("**CLEAN CONTENT** - No toxicity detected!")
 
-# ---------------------------
 # BULK ANALYSIS PAGE
-# ---------------------------
 elif current_page == 'Bulk Analysis':
     st.header("📊 Bulk CSV Analysis")
     st.markdown("*Upload a CSV file with 'text' column to get predictions for all comments.*")
@@ -855,9 +842,7 @@ elif current_page == 'Bulk Analysis':
         except Exception as e:
             st.error(f"Error processing file: {e}")
 
-# ---------------------------
 # MODEL INSIGHTS PAGE
-# ---------------------------
 elif current_page == 'Model Insights':
     st.header("📈 Model Architecture & Performance")
     st.markdown("*Explore model architecture, parameters, and performance metrics extracted directly from the trained model.*")
@@ -1150,14 +1135,4 @@ elif current_page == 'Test Cases':
                     else:
                         st.success("**CLEAN** - No toxicity detected!")
 
-# Footer
-st.markdown("---")
-st.markdown(
-    """
-    <div style="text-align: center; color: #666; padding: 20px;">
-        <p>🔬 <strong>Toxic Comment Detection System</strong> | Built with BiLSTM Neural Networks</p>
-        <p><small>Powered by TensorFlow & Streamlit | Real-time AI Content Moderation</small></p>
-    </div>
-    """, 
-    unsafe_allow_html=True
-)
+
