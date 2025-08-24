@@ -57,10 +57,7 @@ if model is None or tokenizer is None:
     st.error("Failed to load model or tokenizer. Please check if the files exist.")
     st.stop()
 
-
-# ---------------------------
 # Helper Functions
-# ---------------------------
 def preprocess_text(text):
     """Preprocess text for model prediction"""
     if not isinstance(text, str):
@@ -212,9 +209,9 @@ def evaluate_model_performance():
         'true_labels': y_true
     }
 
-# ---------------------------
+st.set_page_config(page_title="Toxic Comment Classifier", layout="wide")
+
 # Streamlit UI
-# ---------------------------
 st.set_page_config(page_title="Toxic Comment Classifier", layout="wide")
 st.title("📝 Toxic Comment Detection App")
 st.markdown("*Real-time toxicity detection with binary classification (1 = Toxic, 0 = Non-toxic)*")
@@ -230,9 +227,7 @@ st.sidebar.header("⚙️ Model Settings")
 st.sidebar.write(f"**Threshold:** {THRESHOLD}")
 st.sidebar.write(f"**Max Sequence Length:** {MAX_LEN}")
 
-# ---------------------------
 # 1. Real-time Prediction
-# ---------------------------
 if page == "Real-time Prediction":
     st.header("💬 Enter a Comment for Prediction")
     
@@ -283,9 +278,7 @@ if page == "Real-time Prediction":
             else:
                 st.success("✅ **CLEAN CONTENT** - No toxicity detected!")
 
-# ---------------------------
 # 2. Bulk Prediction
-# ---------------------------
 elif page == "Bulk Prediction":
     st.header("📂 Upload CSV for Bulk Predictions")
     st.markdown("*Upload a CSV file with a 'comment_text' column to get binary toxicity predictions (1/0) for all comments.*")
@@ -393,9 +386,7 @@ elif page == "Bulk Prediction":
         except Exception as e:
             st.error(f"❌ Error processing file: {e}")
 
-# ---------------------------
 # 3. Model Insights & Metrics
-# ---------------------------
 elif page == "Model Insights & Metrics":
     st.header("📊 Model Insights & Performance Metrics")
     st.markdown("*Explore model architecture, parameters, and performance metrics extracted directly from the trained model.*")
@@ -589,9 +580,7 @@ elif page == "Model Insights & Metrics":
         plt.tight_layout()
         st.pyplot(fig3)
 
-# ---------------------------
 # 4. Sample Test Cases
-# ---------------------------
 elif page == "Sample Test Cases":
     st.header("🧪 Sample Test Cases")
     st.markdown("*Click on any comment below to see its binary toxicity predictions (1 = Toxic, 0 = Non-toxic).*")
@@ -702,6 +691,7 @@ st.markdown("""
     <p><em>Threshold: {threshold} | Max Length: {max_len}</em></p>
 </div>
 """.format(threshold=THRESHOLD, max_len=MAX_LEN), unsafe_allow_html=True)
+
 
 
 
