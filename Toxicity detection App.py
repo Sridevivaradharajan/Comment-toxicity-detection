@@ -22,19 +22,18 @@ def load_bilstm_model():
         with st.spinner("⬇️ Downloading BiLSTM model... Please wait."):
             # ✅ Use direct download link (replace with your file_id)
             file_id = "1kTfFlFAfCAiUdZO5MgCF0N0uxVNd0ZZn"
-            url = f"https://drive.google.com/file/d/1kTfFlFAfCAiUdZO5MgCF0N0uxVNd0ZZn/view?usp=sharing"
+            url = f"https://drive.google.com/uc?id={file_id}"
             gdown.download(url, model_path, quiet=False)
 
-@st.cache_resource
 @st.cache_resource
 def load_tokenizer():
     tokenizer_path = "tokenizer.pkl"
 
     if not os.path.exists(tokenizer_path):
         with st.spinner("⬇️ Downloading tokenizer... Please wait."):
-            # Replace with your tokenizer file_id
+            # ✅ Correct direct download link using uc?id=
             file_id = "1psCM-sISb3ToTc6IYhhw3nSLWqaTVAJm"
-            url = f"https://drive.google.com/file/d/1psCM-sISb3ToTc6IYhhw3nSLWqaTVAJm/view?usp=sharing"
+            url = f"https://drive.google.com/uc?id={file_id}"
             gdown.download(url, tokenizer_path, quiet=False)
 
     # Load the pickle tokenizer
@@ -42,6 +41,7 @@ def load_tokenizer():
         tokenizer = pickle.load(handle)
 
     return tokenizer
+
 
 # Load model and tokenizer
 model = load_bilstm_model()
