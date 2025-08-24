@@ -348,7 +348,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-
 # Initialize session state for navigation
 if 'current_page' not in st.session_state:
     st.session_state.current_page = 'Home'
@@ -1215,6 +1214,7 @@ elif current_page == 'Test Cases':
                         st.error(f"**TOXIC** - {toxic_count} categories detected!")
                     else:
                         st.success("**CLEAN** - No toxicity detected!")
+
 
 
 
