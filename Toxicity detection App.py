@@ -33,7 +33,7 @@ def load_tokenizer():
     if not os.path.exists(tokenizer_path):
         with st.spinner("⬇️ Downloading tokenizer... Please wait."):
             # Replace with your tokenizer file_id
-            file_id = "YOUR_TOKENIZER_FILE_ID"
+            file_id = "Yhttps://drive.google.com/file/d/1psCM-sISb3ToTc6IYhhw3nSLWqaTVAJm/view?usp=sharing"
             url = f"https://drive.google.com/uc?id={file_id}"
             gdown.download(url, tokenizer_path, quiet=False)
 
@@ -698,6 +698,7 @@ st.markdown("""
     <p><em>Threshold: {threshold} | Max Length: {max_len}</em></p>
 </div>
 """.format(threshold=THRESHOLD, max_len=MAX_LEN), unsafe_allow_html=True)
+
 
 
 
