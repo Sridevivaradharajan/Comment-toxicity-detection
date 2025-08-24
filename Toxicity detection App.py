@@ -42,9 +42,9 @@ st.markdown("""
         box-shadow: 0 4px 20px rgba(147, 112, 219, 0.1);
     }
     
-    /* Navigation Styles - Muted Mauve gradient */
+    /* Navigation Styles - Muted Pink Mauve gradient */
     .nav-title {
-        background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);
+        background: linear-gradient(135deg, #C8A8D8 0%, #B695C0 100%);
         color: white;
         padding: 20px;
         border-radius: 15px;
@@ -52,19 +52,19 @@ st.markdown("""
         font-size: 28px;
         font-weight: 700;
         margin-bottom: 30px;
-        box-shadow: 0 8px 25px rgba(137, 247, 254, 0.3);
+        box-shadow: 0 8px 25px rgba(200, 168, 216, 0.3);
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     
-    /* Hero Section - Muted Mauve gradient */
+    /* Hero Section - Muted Pink Mauve gradient */
     .hero-section {
-        background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);
+        background: linear-gradient(135deg, #C8A8D8 0%, #B695C0 100%);
         color: white;
         padding: 60px 40px;
         border-radius: 20px;
         text-align: center;
         margin: 30px 0;
-        box-shadow: 0 15px 35px rgba(137, 247, 254, 0.3);
+        box-shadow: 0 15px 35px rgba(200, 168, 216, 0.3);
     }
     
     .hero-title {
@@ -83,21 +83,21 @@ st.markdown("""
         opacity: 0.95;
     }
     
-    /* Feature Cards - Muted Mauve gradient background */
+    /* Feature Cards - Muted Pink Mauve gradient background */
     .feature-card {
-        background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);
+        background: linear-gradient(135deg, #C8A8D8 0%, #B695C0 100%);
         color: white;
         border-radius: 15px;
         padding: 30px;
         margin: 15px 0;
-        box-shadow: 0 8px 25px rgba(137, 247, 254, 0.3);
+        box-shadow: 0 8px 25px rgba(200, 168, 216, 0.3);
         transition: transform 0.3s ease, box-shadow 0.3s ease;
         border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
     .feature-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 15px 40px rgba(137, 247, 254, 0.4);
+        box-shadow: 0 15px 40px rgba(200, 168, 216, 0.4);
     }
 
     .feature-icon {
@@ -122,9 +122,9 @@ st.markdown("""
         text-align: center;
     }
     
-    /* Stats Container - Same muted mauve gradient */
+    /* Stats Container - Muted pink mauve gradient */
     .stats-container {
-        background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);
+        background: linear-gradient(135deg, #C8A8D8 0%, #B695C0 100%);
         color: white;
         padding: 40px;
         border-radius: 20px;
@@ -161,9 +161,9 @@ st.markdown("""
         letter-spacing: 1px;
     }
     
-    /* Custom Button Styles - Muted Mauve gradient */
+    /* Custom Button Styles - Muted Pink Mauve gradient */
     .stButton > button {
-        background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%) !important;
+        background: linear-gradient(135deg, #C8A8D8 0%, #B695C0 100%) !important;
         color: white !important;
         border: none !important;
         border-radius: 10px !important;
@@ -171,12 +171,12 @@ st.markdown("""
         font-weight: 500 !important;
         font-size: 16px !important;
         transition: all 0.3s ease !important;
-        box-shadow: 0 4px 15px rgba(137, 247, 254, 0.3) !important;
+        box-shadow: 0 4px 15px rgba(200, 168, 216, 0.3) !important;
     }
     
     .stButton > button:hover {
         transform: translateY(-2px) !important;
-        box-shadow: 0 8px 25px rgba(137, 247, 254, 0.4) !important;
+        box-shadow: 0 8px 25px rgba(200, 168, 216, 0.4) !important;
     }
     
     /* Alert Styles */
@@ -187,18 +187,18 @@ st.markdown("""
         background-color: rgba(221, 212, 255, 0.9) !important;
     }
     
-    /* Metric Styles - Muted Mauve accent */
+    /* Metric Styles - Muted Pink Mauve accent */
     .metric-container {
         background: rgba(221, 212, 255, 0.95);
         border-radius: 10px;
         padding: 20px;
-        box-shadow: 0 4px 12px rgba(137, 247, 254, 0.1);
-        border: 1px solid rgba(137, 247, 254, 0.2);
+        box-shadow: 0 4px 12px rgba(200, 168, 216, 0.1);
+        border: 1px solid rgba(200, 168, 216, 0.2);
     }
     
-    /* Progress Bar - Muted Mauve gradient */
+    /* Progress Bar - Muted Pink Mauve gradient */
     .stProgress .st-bo {
-        background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%) !important;
+        background: linear-gradient(135deg, #C8A8D8 0%, #B695C0 100%) !important;
     }
     
     /* Sidebar with #DDD4FF theme */
@@ -206,14 +206,14 @@ st.markdown("""
         background: linear-gradient(180deg, #DDD4FF 0%, #D0C4FF 100%) !important;
     }
     
-    /* Headers with muted mauve underline */
+    /* Headers with muted pink mauve underline */
     h1, h2, h3 {
         color: #4A4A4A;
         font-weight: 600;
     }
     
     h1 {
-        border-bottom: 3px solid #89f7fe;
+        border-bottom: 3px solid #C8A8D8;
         padding-bottom: 10px;
     }
     
@@ -221,7 +221,7 @@ st.markdown("""
     .stDataFrame {
         border-radius: 10px;
         overflow: hidden;
-        box-shadow: 0 4px 12px rgba(137, 247, 254, 0.1);
+        box-shadow: 0 4px 12px rgba(200, 168, 216, 0.1);
         background-color: rgba(221, 212, 255, 0.95);
     }
     
@@ -229,7 +229,7 @@ st.markdown("""
     .stFileUploader {
         background: rgba(221, 212, 255, 0.9);
         border-radius: 10px;
-        border: 2px dashed #89f7fe;
+        border: 2px dashed #C8A8D8;
         padding: 20px;
         backdrop-filter: blur(5px);
     }
@@ -247,13 +247,13 @@ st.markdown("""
     
     .stTextArea > div > div > textarea:focus,
     .stTextInput > div > div > input:focus {
-        border-color: #89f7fe;
-        box-shadow: 0 0 0 3px rgba(137, 247, 254, 0.1);
+        border-color: #C8A8D8;
+        box-shadow: 0 0 0 3px rgba(200, 168, 216, 0.1);
     }
     
-    /* Expander header - Muted Mauve gradient */
+    /* Expander header - Muted Pink Mauve gradient */
     .streamlit-expanderHeader {
-        background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%) !important;
+        background: linear-gradient(135deg, #C8A8D8 0%, #B695C0 100%) !important;
         color: white !important;
         border-radius: 10px !important;
         font-weight: 500 !important;
@@ -311,12 +311,12 @@ st.markdown("""
     
     /* Get Started section buttons */
     .get-started-button {
-        background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%) !important;
+        background: linear-gradient(135deg, #C8A8D8 0%, #B695C0 100%) !important;
         color: white !important;
         padding: 15px 25px !important;
         border-radius: 25px !important;
         font-weight: 500 !important;
-        box-shadow: 0 4px 15px rgba(137, 247, 254, 0.3) !important;
+        box-shadow: 0 4px 15px rgba(200, 168, 216, 0.3) !important;
         border: none !important;
         display: inline-block !important;
         text-decoration: none !important;
@@ -1209,6 +1209,7 @@ elif current_page == 'Test Cases':
                         st.error(f"**TOXIC** - {toxic_count} categories detected!")
                     else:
                         st.success("**CLEAN** - No toxicity detected!")
+
 
 
 
