@@ -355,13 +355,13 @@ def load_bilstm_model():
     model_path = "bilstm_model.h5"
 
     if not os.path.exists(model_path):
-        with st.spinner("⬇️ Downloading BiLSTM model... Please wait."):
-            # ✅ Use direct download link (replace with your file_id)
+        with st.spinner("Downloading BiLSTM model... Please wait."):
+            # Use direct download link (replace with your file_id)
             file_id = "1kTfFlFAfCAiUdZO5MgCF0N0uxVNd0ZZn"
             url = f"https://drive.google.com/uc?id={file_id}"
             gdown.download(url, model_path, quiet=False)
 
-    # ✅ return loaded model
+    # return loaded model
     return load_model(model_path)
 
 # Load Tokenizer
@@ -370,7 +370,7 @@ def load_tokenizer():
     tokenizer_path = "tokenizer.pkl"
 
     if not os.path.exists(tokenizer_path):
-        with st.spinner("⬇️ Downloading tokenizer... Please wait."):
+        with st.spinner("Downloading tokenizer... Please wait."):
             file_id = "1psCM-sISb3ToTc6IYhhw3nSLWqaTVAJm"
             url = f"https://drive.google.com/uc?id={file_id}"
             gdown.download(url, tokenizer_path, quiet=False)
@@ -603,7 +603,7 @@ def render_navigation():
     st.markdown('<div class="nav-title">🔬 Toxic Comment Detection System</div>', unsafe_allow_html=True)
     
     # Navigation buttons
-    pages = ['🏠 Home', '⚡ Live Detection', '📊 Bulk Analysis', '📈 Model Insights', '🧪 Test Cases']
+    pages = ['Home', 'Live Detection', 'Bulk Analysis', 'Model Insights', 'Test Cases']
     page_keys = ['Home', 'Live Detection', 'Bulk Analysis', 'Model Insights', 'Test Cases']
     
     col1, col2, col3, col4, col5 = st.columns(5)
@@ -709,7 +709,7 @@ if current_page == 'Home':
     # Stats Section
     st.markdown("""
     <div class="stats-container">
-        <h2 style="margin-bottom: 20px; font-size: 32px;">📊 System Performance</h2>
+        <h2 style="margin-bottom: 20px; font-size: 32px;">System Performance</h2>
         <div class="stats-grid">
             <div class="stat-item">
                 <div class="stat-number">122</div>
@@ -764,33 +764,28 @@ if current_page == 'Home':
         """, unsafe_allow_html=True)
 
 # LIVE DETECTION PAGE
-elif current_page == 'Live Detection':
-    st.header("⚡ Real-time Toxicity Detection")
-    st.markdown("*Enter any comment below to get instant toxicity predictions*")
-    
-    user_input = st.text_area("Type a comment below:", height=120, placeholder="Enter your comment here...")
-    
-    col1, col2, col3 = st.columns([1, 1, 3])
-    with col1:
-        predict_button = st.button("🔍 Analyze Comment", type="primary", use_container_width=True)
-    with col2:
-        show_probabilities = st.checkbox("Show Probabilities")
-    
-    if predict_button:
-        if user_input.strip() == "":
-            st.warning("Please enter a valid comment.")
-        else:
-            with st.spinner("Analyzing comment..."):
-                # Get binary predictions
-                binary_result = predict_toxicity(user_input, return_probabilities=False)
-                # Get probabilities if requested
-                prob_result = predict_toxicity(user_input, return_probabilities=True)
-            
-            st.subheader("Analysis Results:")
-            
-            # Create columns for better layout
+st.markdown("*Enter one or more comments (each line = one comment)*")
+user_input = st.text_area("Type comments below:", height=180, placeholder="Enter one comment per line...")
+
+col1, col2 = st.columns([1, 1])
+with col1:
+    predict_button = st.button("🔍 Analyze Comments", type="primary", use_container_width=True)
+with col2:
+    show_probabilities = st.checkbox("Show Probabilities")
+
+if predict_button:
+    comments = [c.strip() for c in user_input.split("\n") if c.strip()]
+    if not comments:
+        st.warning("Please enter at least one valid comment.")
+    else:
+        for idx, comment in enumerate(comments, start=1):
+            st.subheader(f"Comment {idx}:")
+            with st.spinner("Analyzing..."):
+                binary_result = predict_toxicity(comment, return_probabilities=False)
+                prob_result = predict_toxicity(comment, return_probabilities=True)
+
             col1, col2 = st.columns([1, 1])
-            
+
             with col1:
                 st.markdown("**Binary Classifications:**")
                 for label, prediction in binary_result.items():
@@ -798,22 +793,20 @@ elif current_page == 'Live Detection':
                         st.error(f"{label.replace('_', ' ').title()}: **{prediction}** (TOXIC)")
                     else:
                         st.success(f"{label.replace('_', ' ').title()}: **{prediction}** (NON-TOXIC)")
-            
+
             if show_probabilities:
                 with col2:
                     st.markdown("**Probability Scores:**")
                     for label, score in prob_result.items():
-                        st.write(f"**{label.replace('_', ' ').title()}:** {score:.3f}")
-                        # Convert to Python float and ensure it's between 0 and 1
                         normalized_score = max(0.0, min(1.0, float(score)))
+                        st.write(f"**{label.replace('_', ' ').title()}:** {score:.3f}")
                         st.progress(normalized_score)
-            
-            # Overall toxicity indicator
+
             toxic_count = sum(binary_result.values())
             if toxic_count > 0:
-                st.error(f"**TOXIC CONTENT DETECTED** - {toxic_count} toxic categories identified!")
+                st.error(f"TOXIC CONTENT DETECTED - {toxic_count} toxic categories identified!")
             else:
-                st.success("**CLEAN CONTENT** - No toxicity detected!")
+                st.success("CLEAN CONTENT - No toxicity detected!")
 
 # BULK ANALYSIS PAGE
 elif current_page == 'Bulk Analysis':
@@ -940,7 +933,7 @@ elif current_page == 'Model Insights':
         st.metric("Number of Layers", model_info.get('Number of Layers', 'N/A'))
     
     # Model Details
-    st.subheader("⚙️ Model Configuration")
+    st.subheader("Model Configuration")
     col1, col2 = st.columns(2)
     
     with col1:
@@ -956,7 +949,7 @@ elif current_page == 'Model Insights':
             st.dataframe(layer_df, use_container_width=True)
     
     # Performance Analysis with Test Data
-    st.subheader("🔬 Performance Evaluation")
+    st.subheader("Performance Evaluation")
     
     if st.button("Run Performance Analysis", type="primary"):
         with st.spinner("Evaluating model performance..."):
@@ -1161,7 +1154,7 @@ elif current_page == 'Test Cases':
             
             # Summary
             toxic_count = (results_df['toxic'] == 1).sum()
-            st.info(f"📈 **Summary:** {toxic_count}/{len(sample_comments)} comments detected as toxic")
+            st.info(f"**Summary:** {toxic_count}/{len(sample_comments)} comments detected as toxic")
     
     with col2:
         show_probabilities = st.checkbox("Show probability scores", key="sample_probs")
@@ -1170,7 +1163,7 @@ elif current_page == 'Test Cases':
     st.subheader("🔍 Individual Comment Analysis")
     
     for i, comment in enumerate(sample_comments):
-        with st.expander(f"💬 Comment {i+1}: {comment[:60]}{'...' if len(comment) > 60 else ''}"):
+        with st.expander(f"Comment {i+1}: {comment[:60]}{'...' if len(comment) > 60 else ''}"):
             st.write(f"**Full Comment:** *{comment}*")
             
             col1, col2 = st.columns([1, 2])
@@ -1212,6 +1205,7 @@ elif current_page == 'Test Cases':
                         st.error(f"**TOXIC** - {toxic_count} categories detected!")
                     else:
                         st.success("**CLEAN** - No toxicity detected!")
+
 
 
 
