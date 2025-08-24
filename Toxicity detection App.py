@@ -209,8 +209,6 @@ def evaluate_model_performance():
         'true_labels': y_true
     }
 
-st.set_page_config(page_title="Toxic Comment Classifier", layout="wide")
-
 # Streamlit UI
 st.set_page_config(page_title="Toxic Comment Classifier", layout="wide")
 st.title("📝 Toxic Comment Detection App")
@@ -691,6 +689,7 @@ st.markdown("""
     <p><em>Threshold: {threshold} | Max Length: {max_len}</em></p>
 </div>
 """.format(threshold=THRESHOLD, max_len=MAX_LEN), unsafe_allow_html=True)
+
 
 
 
