@@ -268,6 +268,10 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# Initialize session state for navigation
+if 'current_page' not in st.session_state:
+    st.session_state.current_page = 'Home'
+
 @st.cache_resource
 def load_bilstm_model():
     model_path = "bilstm_model.h5"
@@ -298,16 +302,6 @@ def load_tokenizer():
         tokenizer = pickle.load(handle)
 
     return tokenizer
-
-# Load model and tokenizer
-model = load_bilstm_model()
-tokenizer = load_tokenizer()
-MAX_LEN = 122  # Based on preprocessing
-THRESHOLD = 0.5  # Threshold for binary classification
-
-if model is None or tokenizer is None:
-    st.error("Failed to load model or tokenizer. Please check if the files exist.")
-    st.stop()
 
 def preprocess_text(text):
     """Preprocess text for model prediction"""
@@ -438,7 +432,7 @@ def evaluate_model_performance():
         # Non-toxic comments
         {"text": "I love this! Such a great experience.", "labels": [0, 0, 0, 0, 0, 0]},
         {"text": "Wow, you are amazing, keep going!", "labels": [0, 0, 0, 0, 0, 0]},
-       {"text": "That's an interesting perspective, thanks for sharing.", "labels": [0, 0, 0, 0, 0, 0]},
+        {"text": "That's an interesting perspective, thanks for sharing.", "labels": [0, 0, 0, 0, 0, 0]},
         {"text": "The weather is really nice today.", "labels": [0, 0, 0, 0, 0, 0]},
         {"text": "Thank you for your help, much appreciated.", "labels": [0, 0, 0, 0, 0, 0]},
         {"text": "Great job on the presentation!", "labels": [0, 0, 0, 0, 0, 0]},
@@ -509,29 +503,54 @@ def evaluate_model_performance():
         'true_labels': y_true
     }
 
+# Load model and tokenizer only after functions are defined
+@st.cache_resource
+def initialize_model():
+    model = load_bilstm_model()
+    tokenizer = load_tokenizer()
+    return model, tokenizer
+
+# Initialize the app
+try:
+    model, tokenizer = initialize_model()
+    MAX_LEN = 122  # Based on preprocessing
+    THRESHOLD = 0.5  # Threshold for binary classification
+    
+    if model is None or tokenizer is None:
+        st.error("❌ Failed to load model or tokenizer. Please check if the files exist.")
+        st.stop()
+    else:
+        st.success("✅ Model and tokenizer loaded successfully!")
+        
+except Exception as e:
+    st.error(f"❌ Error initializing model: {str(e)}")
+    st.info("📝 Note: Model will be downloaded on first run. This may take a few minutes.")
+    st.stop()
+
 # Navigation System
 def render_navigation():
-    st.markdown('<div class="nav-title">Toxic Comment Detection System</div>', unsafe_allow_html=True)
-    
-    # Initialize session state
-    if 'current_page' not in st.session_state:
-        st.session_state.current_page = 'Home'
+    st.markdown('<div class="nav-title">🔬 Toxic Comment Detection System</div>', unsafe_allow_html=True)
     
     # Navigation buttons
-    pages = ['Home', 'Live Detection', 'Bulk Analysis', 'Model Insights', 'Test Cases']
+    pages = ['🏠 Home', '⚡ Live Detection', '📊 Bulk Analysis', '📈 Model Insights', '🧪 Test Cases']
+    page_keys = ['Home', 'Live Detection', 'Bulk Analysis', 'Model Insights', 'Test Cases']
     
     col1, col2, col3, col4, col5 = st.columns(5)
     columns = [col1, col2, col3, col4, col5]
     
-    for i, page in enumerate(pages):
+    for i, (page, key) in enumerate(zip(pages, page_keys)):
         with columns[i]:
-            if st.button(page, key=f"nav_{page}", use_container_width=True):
-                st.session_state.current_page = page
+            if st.button(page, key=f"nav_{key}", use_container_width=True):
+                st.session_state.current_page = key
+                st.rerun()
     
     return st.session_state.current_page
 
 # Navigation
 current_page = render_navigation()
+
+# Add some spacing
+st.markdown("<br>", unsafe_allow_html=True)
 
 # ---------------------------
 # HOME PAGE
@@ -540,7 +559,7 @@ if current_page == 'Home':
     # Hero Section
     st.markdown("""
     <div class="hero-section">
-        <div class="hero-title">Advanced Toxicity Detection</div>
+        <div class="hero-title">🚀 Advanced Toxicity Detection</div>
         <div class="hero-subtitle">
             Powered by cutting-edge BiLSTM neural networks, our AI system provides real-time toxicity detection 
             across multiple categories with high precision and reliability.
@@ -621,7 +640,7 @@ if current_page == 'Home':
     # Stats Section
     st.markdown("""
     <div class="stats-container">
-        <h2 style="margin-bottom: 20px; font-size: 32px;">🚀 System Performance</h2>
+        <h2 style="margin-bottom: 20px; font-size: 32px;">📊 System Performance</h2>
         <div class="stats-grid">
             <div class="stat-item">
                 <div class="stat-number">122</div>
@@ -675,4 +694,470 @@ if current_page == 'Home':
         </div>
         """, unsafe_allow_html=True)
 
-#
+# ---------------------------
+# LIVE DETECTION PAGE
+# ---------------------------
+elif current_page == 'Live Detection':
+    st.header("⚡ Real-time Toxicity Detection")
+    st.markdown("*Enter any comment below to get instant toxicity predictions*")
+    
+    user_input = st.text_area("Type a comment below:", height=120, placeholder="Enter your comment here...")
+    
+    col1, col2, col3 = st.columns([1, 1, 3])
+    with col1:
+        predict_button = st.button("🔍 Analyze Comment", type="primary", use_container_width=True)
+    with col2:
+        show_probabilities = st.checkbox("Show Probabilities")
+    
+    if predict_button:
+        if user_input.strip() == "":
+            st.warning("Please enter a valid comment.")
+        else:
+            with st.spinner("Analyzing comment..."):
+                # Get binary predictions
+                binary_result = predict_toxicity(user_input, return_probabilities=False)
+                # Get probabilities if requested
+                prob_result = predict_toxicity(user_input, return_probabilities=True)
+            
+            st.subheader("Analysis Results:")
+            
+            # Create columns for better layout
+            col1, col2 = st.columns([1, 1])
+            
+            with col1:
+                st.markdown("**Binary Classifications:**")
+                for label, prediction in binary_result.items():
+                    if prediction == 1:
+                        st.error(f"{label.replace('_', ' ').title()}: **{prediction}** (TOXIC)")
+                    else:
+                        st.success(f"{label.replace('_', ' ').title()}: **{prediction}** (NON-TOXIC)")
+            
+            if show_probabilities:
+                with col2:
+                    st.markdown("**Probability Scores:**")
+                    for label, score in prob_result.items():
+                        st.write(f"**{label.replace('_', ' ').title()}:** {score:.3f}")
+                        # Convert to Python float and ensure it's between 0 and 1
+                        normalized_score = max(0.0, min(1.0, float(score)))
+                        st.progress(normalized_score)
+            
+            # Overall toxicity indicator
+            toxic_count = sum(binary_result.values())
+            if toxic_count > 0:
+                st.error(f"**TOXIC CONTENT DETECTED** - {toxic_count} toxic categories identified!")
+            else:
+                st.success("**CLEAN CONTENT** - No toxicity detected!")
+
+# ---------------------------
+# BULK ANALYSIS PAGE
+# ---------------------------
+elif current_page == 'Bulk Analysis':
+    st.header("📊 Bulk CSV Analysis")
+    st.markdown("*Upload a CSV file with 'text' column to get predictions for all comments.*")
+    
+    uploaded_file = st.file_uploader("Upload CSV file", type=["csv"], help="CSV must contain a column named 'text'")
+    
+    if uploaded_file is not None:
+        try:
+            data = pd.read_csv(uploaded_file)
+            
+            if "text" not in data.columns:
+                st.error("CSV must have a column named 'text'")
+                st.info("Available columns: " + ", ".join(data.columns.tolist()))
+            else:
+                st.success(f"File uploaded successfully! Found **{len(data)}** rows.")
+                
+                with st.expander("Preview Data"):
+                    st.dataframe(data.head(10))
+
+                col1, col2 = st.columns([1, 1])
+                with col1:
+                    include_probabilities = st.checkbox("Include probability scores", help="Add probability columns alongside binary predictions")
+                
+                if st.button("Run Bulk Predictions", type="primary"):
+                    # Predictions with progress bar
+                    binary_predictions = []
+                    prob_predictions = []
+                    
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
+                    
+                    for i, text in enumerate(data["text"].fillna("")):
+                        binary_preds = predict_toxicity(text, return_probabilities=False)
+                        binary_predictions.append(binary_preds)
+                        
+                        if include_probabilities:
+                            prob_preds = predict_toxicity(text, return_probabilities=True)
+                            prob_predictions.append(prob_preds)
+                        
+                        progress_bar.progress((i + 1) / len(data))
+                        status_text.text(f'Processing: {i + 1}/{len(data)} comments')
+
+                    # Create results dataframe
+                    binary_df = pd.DataFrame(binary_predictions)
+                    result_df = pd.concat([data, binary_df], axis=1)
+                    
+                    if include_probabilities:
+                        prob_df = pd.DataFrame(prob_predictions)
+                        prob_df.columns = [f"{col}_prob" for col in prob_df.columns]
+                        result_df = pd.concat([result_df, prob_df], axis=1)
+
+                    st.success("Predictions Completed!")
+                    
+                    # Show results preview
+                    with st.expander("Results Preview"):
+                        st.dataframe(result_df.head(10))
+
+                    # Summary statistics
+                    st.subheader("Summary Statistics")
+                    labels = ["toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"]
+                    
+                    col1, col2, col3, col4 = st.columns(4)
+                    with col1:
+                        st.metric("Total Comments", len(data))
+                    with col2:
+                        toxic_comments = (binary_df['toxic'] == 1).sum()
+                        st.metric("Toxic Comments", toxic_comments)
+                    with col3:
+                        clean_comments = len(data) - toxic_comments
+                        st.metric("Clean Comments", clean_comments)
+                    with col4:
+                        toxicity_rate = (toxic_comments / len(data)) * 100
+                        st.metric("Toxicity Rate", f"{toxicity_rate:.1f}%")
+                    
+                    # Category breakdown
+                    st.subheader("Category Breakdown")
+                    category_counts = binary_df[labels].sum()
+                    
+                    # Use the fixed chart function
+                    fig = create_bar_chart_with_proper_margins(
+                        categories=[label.replace('_', ' ').title() for label in category_counts.index],
+                        values=category_counts.values,
+                        title="Toxic Comments by Category",
+                        ylabel="Number of Toxic Comments",
+                        colors=['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57', '#FF9FF3']
+                    )
+                    
+                    st.pyplot(fig)
+                    plt.close()
+
+                    # Download option
+                    csv = result_df.to_csv(index=False).encode("utf-8")
+                    st.download_button(
+                        "Download Predictions as CSV", 
+                        csv, 
+                        "toxicity_predictions.csv", 
+                        "text/csv",
+                        type="primary",
+                        help="Download the complete results with binary predictions"
+                    )
+                    
+        except Exception as e:
+            st.error(f"Error processing file: {e}")
+
+# ---------------------------
+# MODEL INSIGHTS PAGE
+# ---------------------------
+elif current_page == 'Model Insights':
+    st.header("📈 Model Architecture & Performance")
+    st.markdown("*Explore model architecture, parameters, and performance metrics extracted directly from the trained model.*")
+    
+    # Get model metrics
+    model_info, layer_info = get_model_metrics()
+    
+    # Model Architecture
+    st.subheader("Model Architecture")
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric("Total Parameters", f"{model_info.get('Total Parameters', 'N/A'):,}")
+    with col2:
+        st.metric("Trainable Parameters", f"{model_info.get('Trainable Parameters', 'N/A'):,}")
+    with col3:
+        st.metric("Number of Layers", model_info.get('Number of Layers', 'N/A'))
+    
+    # Model Details
+    st.subheader("⚙️ Model Configuration")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("**Model Details:**")
+        for key, value in model_info.items():
+            if key not in ['Total Parameters', 'Trainable Parameters', 'Number of Layers']:
+                st.write(f"- **{key}:** {value}")
+    
+    with col2:
+        st.markdown("**Layer Architecture:**")
+        if layer_info:
+            layer_df = pd.DataFrame(layer_info)
+            st.dataframe(layer_df, use_container_width=True)
+    
+    # Performance Analysis with Test Data
+    st.subheader("🔬 Performance Evaluation")
+    
+    if st.button("Run Performance Analysis", type="primary"):
+        with st.spinner("Evaluating model performance..."):
+            evaluation_results = evaluate_model_performance()
+        
+        st.success("Evaluation completed!")
+        
+        # Overall Performance Metrics
+        st.subheader("Overall Performance")
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("Overall Accuracy", f"{evaluation_results['overall_accuracy']:.3f}")
+        with col2:
+            macro_f1 = evaluation_results['classification_report']['macro avg']['f1-score']
+            st.metric("Macro F1-Score", f"{macro_f1:.3f}")
+        with col3:
+            weighted_f1 = evaluation_results['classification_report']['weighted avg']['f1-score']
+            st.metric("Weighted F1-Score", f"{weighted_f1:.3f}")
+        with col4:
+            st.metric("Test Samples", len(evaluation_results['test_data']))
+        
+        # Per-Class Performance
+        st.subheader("Per-Class Performance Metrics")
+        
+        # Create a detailed metrics table
+        metrics_data = []
+        labels = ["toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"]
+        
+        for label in labels:
+            class_report = evaluation_results['classification_report'][label]
+            metrics_data.append({
+                'Category': label.replace('_', ' ').title(),
+                'Precision': f"{class_report['precision']:.3f}",
+                'Recall': f"{class_report['recall']:.3f}",
+                'F1-Score': f"{class_report['f1-score']:.3f}",
+                'Support': int(class_report['support'])
+            })
+        
+        metrics_df = pd.DataFrame(metrics_data)
+        st.dataframe(metrics_df, use_container_width=True)
+        
+        # Visualization
+        st.subheader("📈 Performance Visualization")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Accuracy by category
+            categories = [item['Category'] for item in metrics_data]
+            accuracies = [evaluation_results['class_metrics'][label]['accuracy'] for label in labels]
+            
+            fig1 = create_bar_chart_with_proper_margins(
+                categories=categories,
+                values=accuracies,
+                title="Accuracy by Category",
+                ylabel="Accuracy",
+                colors=['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57', '#FF9FF3'],
+                figsize=(10, 8)
+            )
+            
+            # Set y-axis limit for accuracy
+            fig1.axes[0].set_ylim(0, 1.05)
+            
+            st.pyplot(fig1)
+            plt.close()
+        
+        with col2:
+            # F1-Score comparison
+            f1_scores = [evaluation_results['class_metrics'][label]['f1_score'] for label in labels]
+
+            fig2 = create_bar_chart_with_proper_margins(
+                categories=categories,
+                values=f1_scores,
+                title="F1-Score by Category",
+                ylabel="F1-Score",
+                colors=['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57', '#FF9FF3'],
+                figsize=(10, 8)
+            )
+
+            # Set y-axis limit for F1-score
+            fig2.axes[0].set_ylim(0, 1.05)
+
+            st.pyplot(fig2)
+            plt.close()
+
+        # Detailed Test Results
+        st.subheader("🔍 Detailed Test Results")
+        with st.expander("View All Test Predictions vs Ground Truth"):
+            test_results = []
+            for i, item in enumerate(evaluation_results['test_data']):
+                result = {
+                    'Comment': item['text'][:50] + "..." if len(item['text']) > 50 else item['text'],
+                    'Full_Comment': item['text']
+                }
+                
+                # Add true labels
+                for j, label in enumerate(labels):
+                    result[f'True_{label}'] = item['labels'][j]
+                
+                # Add predictions
+                for j, label in enumerate(labels):
+                    result[f'Pred_{label}'] = evaluation_results['predictions'][i][j]
+                
+                # Add match indicators
+                for j, label in enumerate(labels):
+                    result[f'Match_{label}'] = "✅" if item['labels'][j] == evaluation_results['predictions'][i][j] else "❌"
+                
+                test_results.append(result)
+            
+            test_df = pd.DataFrame(test_results)
+            st.dataframe(test_df.drop('Full_Comment', axis=1), use_container_width=True)
+
+        # Model Confidence Analysis
+        st.subheader("Model Confidence Analysis")
+        
+        # Calculate confidence metrics
+        high_confidence = 0
+        medium_confidence = 0
+        low_confidence = 0
+        
+        for i in range(len(evaluation_results['probabilities'])):
+            max_prob = np.max(evaluation_results['probabilities'][i])
+            if max_prob >= 0.8:
+                high_confidence += 1
+            elif max_prob >= 0.6:
+                medium_confidence += 1
+            else:
+                low_confidence += 1
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("High Confidence (≥80%)", high_confidence)
+        with col2:
+            st.metric("Medium Confidence (60-80%)", medium_confidence)
+        with col3:
+            st.metric("Low Confidence (<60%)", low_confidence)
+        
+        # Probability Distribution
+        st.subheader("Probability Score Distribution")
+        
+        # Prepare data for histogram
+        prob_data = []
+        for i in range(len(labels)):
+            prob_data.append(evaluation_results['probabilities'][:, i])
+        
+        fig3 = create_histogram_subplots_with_proper_margins(
+            data_arrays=prob_data,
+            labels=labels,
+            title="Probability Score Distribution by Category",
+            threshold=THRESHOLD,
+            figsize=(16, 12)
+        )
+        
+        st.pyplot(fig3)
+        plt.close()
+
+# TEST CASES PAGE
+elif current_page == 'Test Cases':
+    st.header("🧪 Sample Test Cases")
+    st.markdown("*Click on any comment below to see its binary toxicity predictions (1 = Toxic, 0 = Non-toxic).*")
+    
+    sample_comments = [
+        "You are so stupid and ugly!",
+        "I love this! Such a great experience.",
+        "I will find you and hurt you.",
+        "This is a bad product, waste of money!",
+        "Wow, you are amazing, keep going!",
+        "Go kill yourself, you worthless piece of trash!",
+        "That's an interesting perspective, thanks for sharing.",
+        "I hate all people from that religion!",
+        "The weather is really nice today.",
+        "You're such an idiot, nobody likes you!",
+        "This movie was terrible, worst acting ever!",
+        "Thank you for your help, much appreciated.",
+        "I'm going to destroy your life!",
+        "What a beautiful sunset today.",
+        "You moron, learn to drive properly!"
+    ]
+    
+    # Option to analyze all at once
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button("🔍 Analyze All Comments", type="primary"):
+            st.subheader("Bulk Analysis Results")
+            
+            all_results = []
+            progress_bar = st.progress(0)
+            
+            for i, comment in enumerate(sample_comments):
+                binary_pred = predict_toxicity(comment, return_probabilities=False)
+                result = {"Comment": comment[:50] + "..." if len(comment) > 50 else comment}
+                result.update(binary_pred)
+                result["Total_Toxic_Categories"] = sum(binary_pred.values())
+                all_results.append(result)
+                progress_bar.progress((i + 1) / len(sample_comments))
+            
+            results_df = pd.DataFrame(all_results)
+            
+            # Display results with color coding
+            st.dataframe(results_df, use_container_width=True)
+            
+            # Summary
+            toxic_count = (results_df['toxic'] == 1).sum()
+            st.info(f"📈 **Summary:** {toxic_count}/{len(sample_comments)} comments detected as toxic")
+    
+    with col2:
+        show_probabilities = st.checkbox("Show probability scores", key="sample_probs")
+    
+    st.markdown("---")
+    st.subheader("🔍 Individual Comment Analysis")
+    
+    for i, comment in enumerate(sample_comments):
+        with st.expander(f"💬 Comment {i+1}: {comment[:60]}{'...' if len(comment) > 60 else ''}"):
+            st.write(f"**Full Comment:** *{comment}*")
+            
+            col1, col2 = st.columns([1, 2])
+            
+            with col1:
+                if st.button(f"🔍 Analyze", key=f"analyze_{i}"):
+                    with st.spinner("Analyzing..."):
+                        binary_preds = predict_toxicity(comment, return_probabilities=False)
+                        prob_preds = predict_toxicity(comment, return_probabilities=True)
+                    
+                    # Store results in session state
+                    st.session_state[f"binary_{i}"] = binary_preds
+                    st.session_state[f"prob_{i}"] = prob_preds
+            
+            with col2:
+                # Display results if they exist
+                if f"binary_{i}" in st.session_state:
+                    binary_preds = st.session_state[f"binary_{i}"]
+                    prob_preds = st.session_state[f"prob_{i}"]
+                    
+                    st.write("**Binary Classifications:**")
+                    toxic_count = 0
+                    for label, prediction in binary_preds.items():
+                        if prediction == 1:
+                            st.error(f"{label.replace('_', ' ').title()}: **{prediction}**")
+                            toxic_count += 1
+                        else:
+                            st.success(f"{label.replace('_', ' ').title()}: **{prediction}**")
+                    
+                    if show_probabilities:
+                        st.write("**Probability Scores:**")
+                        for label, score in prob_preds.items():
+                            # Convert to Python float for display
+                            score_float = float(score)
+                            st.write(f"- {label.replace('_', ' ').title()}: {score_float:.3f}")
+                    
+                    # Overall assessment
+                    if toxic_count > 0:
+                        st.error(f"**TOXIC** - {toxic_count} categories detected!")
+                    else:
+                        st.success("**CLEAN** - No toxicity detected!")
+
+# Footer
+st.markdown("---")
+st.markdown(
+    """
+    <div style="text-align: center; color: #666; padding: 20px;">
+        <p>🔬 <strong>Toxic Comment Detection System</strong> | Built with BiLSTM Neural Networks</p>
+        <p><small>Powered by TensorFlow & Streamlit | Real-time AI Content Moderation</small></p>
+    </div>
+    """, 
+    unsafe_allow_html=True
+)
