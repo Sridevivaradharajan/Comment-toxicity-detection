@@ -27,12 +27,11 @@ def load_bilstm_model():
     return load_model(model_path)
 
 @st.cache_resource
-@st.cache_resource
 def load_tokenizer():
     tokenizer_path = "tokenizer.pkl"
     
     # Add your tokenizer Google Drive URL here
-    tokenizer_url = "YOUR_TOKENIZER_GOOGLE_DRIVE_URL"  # Replace with actual URL
+    tokenizer_url = "https://drive.google.com/file/d/1psCM-sISb3ToTc6IYhhw3nSLWqaTVAJm/view?usp=sharing" 
     
     # Download from Google Drive if not already downloaded
     if not os.path.exists(tokenizer_path) and tokenizer_url != "YOUR_TOKENIZER_GOOGLE_DRIVE_URL":
