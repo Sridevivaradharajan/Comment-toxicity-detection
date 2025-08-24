@@ -488,7 +488,7 @@ elif current_page == 'Bulk Analysis':
     st.header("📊 Bulk CSV Analysis")
     st.markdown("*Upload a CSV file with 'text'column to get predictions for all comments.*")
     
-    uploaded_file = st.file_uploader("Upload CSV file", type=["csv"], help="CSV must contain a column named 'comment_text'")
+    uploaded_file = st.file_uploader("Upload CSV file", type=["csv"], help="CSV must contain a column named 'text'")
     
     if uploaded_file is not None:
         try:
@@ -515,7 +515,7 @@ elif current_page == 'Bulk Analysis':
                     progress_bar = st.progress(0)
                     status_text = st.empty()
                     
-                    for i, text in enumerate(data["comment_text"].fillna("")):
+                    for i, text in enumerate(data["text"].fillna("")):
                         binary_preds = predict_toxicity(text, return_probabilities=False)
                         binary_predictions.append(binary_preds)
                         
@@ -890,5 +890,6 @@ elif current_page == 'Test Cases':
                         st.success("**CLEAN** - No toxicity detected!")
     
     st.markdown('</div>', unsafe_allow_html=True)
+
 
 
