@@ -15,13 +15,13 @@ from tensorflow.keras.models import load_model
 
 st.set_page_config(page_title="Toxic Comment Classifier", layout="wide")
 
-# Add CSS styling with #DDD4FF background and muted mauve accents
+# Add CSS styling with #DDD4FF background and pink gradient accents for containers and buttons
 st.markdown("""
 <style>
     /* Import Google Fonts */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     
-    /* Global Styles with #DDD4FF Background */
+    /* Global Styles */
     .main {
         font-family: 'Inter', sans-serif;
         background-color: #DDD4FF !important;
@@ -29,154 +29,166 @@ st.markdown("""
     
     /* Streamlit main container background */
     .stApp {
-        background: linear-gradient(135deg, #DDD4FF 0%, #D0C4FF 30%, #C4B8FF 100%) !important;
+        background-color: #DDD4FF !important;
     }
     
-    /* Main content area */
+    /* Main content area - Pink Gradient Container */
     .main .block-container {
-        background-color: rgba(221, 212, 255, 0.8) !important;
+        background: linear-gradient(135deg, #F8BBD0 0%, #F48FB1 100%) !important;
         border-radius: 15px;
-        padding: 2rem 1rem;
-        margin: 0 auto;
-        backdrop-filter: blur(10px);
-        box-shadow: 0 4px 20px rgba(147, 112, 219, 0.1);
+        padding: 2rem;
+        margin: 1rem auto;
+        box-shadow: 0 8px 25px rgba(244, 143, 177, 0.2);
+        border: 1px solid rgba(244, 143, 177, 0.3);
     }
     
-    /* Navigation Styles - Muted Pink Mauve gradient */
+    /* Navigation Styles */
     .nav-title {
-        background: linear-gradient(135deg, #C8A8D8 0%, #B695C0 100%);
-        color: white;
+        background: rgba(255, 255, 255, 0.9);
+        color: #4A4A4A;
         padding: 20px;
         border-radius: 15px;
         text-align: center;
         font-size: 28px;
         font-weight: 700;
         margin-bottom: 30px;
-        box-shadow: 0 8px 25px rgba(200, 168, 216, 0.3);
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     }
     
-    /* Hero Section - Muted Pink Mauve gradient */
+    /* Hero Section */
     .hero-section {
-        background: linear-gradient(135deg, #C8A8D8 0%, #B695C0 100%);
-        color: white;
-        padding: 60px 40px;
-        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.9);
+        color: #4A4A4A;
+        padding: 40px;
+        border-radius: 15px;
         text-align: center;
         margin: 30px 0;
-        box-shadow: 0 15px 35px rgba(200, 168, 216, 0.3);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     }
     
     .hero-title {
-        font-size: 48px;
+        font-size: 36px;
         font-weight: 700;
         margin-bottom: 20px;
-        text-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+        color: #4A4A4A;
     }
     
     .hero-subtitle {
-        font-size: 20px;
+        font-size: 18px;
         font-weight: 300;
         line-height: 1.6;
         max-width: 800px;
         margin: 0 auto;
-        opacity: 0.95;
+        color: #666;
     }
     
-    /* Feature Cards - Muted Pink Mauve gradient background */
+    /* Feature Cards */
     .feature-card {
-        background: linear-gradient(135deg, #C8A8D8 0%, #B695C0 100%);
-        color: white;
-        border-radius: 15px;
-        padding: 30px;
+        background: rgba(255, 255, 255, 0.9);
+        color: #4A4A4A;
+        border-radius: 12px;
+        padding: 25px;
         margin: 15px 0;
-        box-shadow: 0 8px 25px rgba(200, 168, 216, 0.3);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         transition: transform 0.3s ease, box-shadow 0.3s ease;
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(0, 0, 0, 0.1);
     }
 
     .feature-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 15px 40px rgba(200, 168, 216, 0.4);
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
     }
 
     .feature-icon {
-        font-size: 40px;
+        font-size: 32px;
         margin-bottom: 15px;
         text-align: center;
-        color: white;
+        color: #F48FB1;
     }
 
     .feature-title {
-        color: white;
-        font-size: 22px;
+        color: #4A4A4A;
+        font-size: 20px;
         font-weight: 600;
         margin-bottom: 15px;
         text-align: center;
     }
 
     .feature-description {
-        color: rgba(255, 255, 255, 0.9);
-        font-size: 16px;
+        color: #666;
+        font-size: 14px;
         line-height: 1.6;
         text-align: center;
     }
     
-    /* Stats Container - Muted pink mauve gradient */
+    /* Stats Container */
     .stats-container {
-        background: linear-gradient(135deg, #C8A8D8 0%, #B695C0 100%);
-        color: white;
-        padding: 40px;
-        border-radius: 20px;
-        margin: 40px 0;
+        background: rgba(255, 255, 255, 0.9);
+        color: #4A4A4A;
+        padding: 30px;
+        border-radius: 15px;
+        margin: 30px 0;
         text-align: center;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     }
     
     .stats-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 30px;
-        margin-top: 30px;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 20px;
+        margin-top: 25px;
     }
     
     .stat-item {
-        background: rgba(255, 255, 255, 0.15);
-        border-radius: 15px;
-        padding: 25px;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(248, 187, 208, 0.2);
+        border-radius: 12px;
+        padding: 20px;
+        border: 1px solid rgba(244, 143, 177, 0.2);
     }
     
     .stat-number {
-        font-size: 36px;
+        font-size: 32px;
         font-weight: 700;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
+        color: #F48FB1;
     }
     
     .stat-label {
         font-size: 14px;
         font-weight: 500;
-        opacity: 0.9;
+        color: #666;
         text-transform: uppercase;
         letter-spacing: 1px;
     }
     
-    /* Custom Button Styles - Muted Pink Mauve gradient */
+    /* Custom Button Styles - Pink Gradient */
     .stButton > button {
-        background: linear-gradient(135deg, #C8A8D8 0%, #B695C0 100%) !important;
+        background: linear-gradient(135deg, #F48FB1 0%, #EC407A 100%) !important;
         color: white !important;
         border: none !important;
         border-radius: 10px !important;
         padding: 12px 24px !important;
-        font-weight: 500 !important;
+        font-weight: 600 !important;
         font-size: 16px !important;
         transition: all 0.3s ease !important;
-        box-shadow: 0 4px 15px rgba(200, 168, 216, 0.3) !important;
+        box-shadow: 0 4px 15px rgba(244, 143, 177, 0.3) !important;
     }
     
     .stButton > button:hover {
         transform: translateY(-2px) !important;
-        box-shadow: 0 8px 25px rgba(200, 168, 216, 0.4) !important;
+        box-shadow: 0 8px 25px rgba(244, 143, 177, 0.4) !important;
+        background: linear-gradient(135deg, #EC407A 0%, #D81B60 100%) !important;
+    }
+    
+    /* Primary Button Variant */
+    .stButton > button[data-baseweb="button"][kind="primary"] {
+        background: linear-gradient(135deg, #EC407A 0%, #D81B60 100%) !important;
+        box-shadow: 0 4px 15px rgba(236, 64, 122, 0.4) !important;
+    }
+    
+    .stButton > button[data-baseweb="button"][kind="primary"]:hover {
+        background: linear-gradient(135deg, #D81B60 0%, #C2185B 100%) !important;
+        box-shadow: 0 8px 25px rgba(216, 27, 96, 0.5) !important;
     }
     
     /* Alert Styles */
@@ -184,98 +196,99 @@ st.markdown("""
         border-radius: 10px;
         border: none;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        background-color: rgba(221, 212, 255, 0.9) !important;
+        background-color: rgba(255, 255, 255, 0.9) !important;
     }
     
-    /* Metric Styles - Muted Pink Mauve accent */
+    /* Metric Styles */
     .metric-container {
-        background: rgba(221, 212, 255, 0.95);
+        background: rgba(255, 255, 255, 0.9);
         border-radius: 10px;
         padding: 20px;
-        box-shadow: 0 4px 12px rgba(200, 168, 216, 0.1);
-        border: 1px solid rgba(200, 168, 216, 0.2);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        border: 1px solid rgba(0, 0, 0, 0.1);
     }
     
-    /* Progress Bar - Muted Pink Mauve gradient */
+    /* Progress Bar */
     .stProgress .st-bo {
-        background: linear-gradient(135deg, #C8A8D8 0%, #B695C0 100%) !important;
+        background: linear-gradient(135deg, #F48FB1 0%, #EC407A 100%) !important;
     }
     
-    /* Sidebar with #DDD4FF theme */
+    /* Sidebar */
     .css-1d391kg {
-        background: linear-gradient(180deg, #DDD4FF 0%, #D0C4FF 100%) !important;
+        background: linear-gradient(180deg, #DDD4FF 0%, #CCC2FF 100%) !important;
     }
     
-    /* Headers with muted pink mauve underline */
+    /* Headers */
     h1, h2, h3 {
         color: #4A4A4A;
         font-weight: 600;
     }
     
     h1 {
-        border-bottom: 3px solid #C8A8D8;
-        padding-bottom: 10px;
+        border-bottom: 3px solid #F48FB1;
+        padding-bottom: 12px;
     }
     
     /* Dataframe Styling */
     .stDataFrame {
         border-radius: 10px;
         overflow: hidden;
-        box-shadow: 0 4px 12px rgba(200, 168, 216, 0.1);
-        background-color: rgba(221, 212, 255, 0.95);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        background-color: rgba(255, 255, 255, 0.9);
     }
     
     /* File Uploader */
     .stFileUploader {
-        background: rgba(221, 212, 255, 0.9);
+        background: rgba(255, 255, 255, 0.9);
         border-radius: 10px;
-        border: 2px dashed #C8A8D8;
+        border: 2px dashed #F48FB1;
         padding: 20px;
-        backdrop-filter: blur(5px);
     }
     
     /* Text Areas and Inputs */
     .stTextArea > div > div > textarea,
     .stTextInput > div > div > input {
-        border-radius: 10px;
+        border-radius: 8px;
         border: 2px solid #e0e0e0;
         font-size: 16px;
         padding: 12px;
         transition: border-color 0.3s ease;
-        background-color: rgba(221, 212, 255, 0.95) !important;
+        background-color: rgba(255, 255, 255, 0.9) !important;
     }
     
     .stTextArea > div > div > textarea:focus,
     .stTextInput > div > div > input:focus {
-        border-color: #C8A8D8;
-        box-shadow: 0 0 0 3px rgba(200, 168, 216, 0.1);
+        border-color: #F48FB1;
+        box-shadow: 0 0 0 3px rgba(244, 143, 177, 0.1);
     }
     
-    /* Expander header - Muted Pink Mauve gradient */
+    /* Expander header */
     .streamlit-expanderHeader {
-        background: linear-gradient(135deg, #C8A8D8 0%, #B695C0 100%) !important;
-        color: white !important;
-        border-radius: 10px !important;
-        font-weight: 500 !important;
+        background: rgba(248, 187, 208, 0.3) !important;
+        color: #4A4A4A !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        border: 1px solid rgba(244, 143, 177, 0.2);
     }
     
     .streamlit-expanderContent {
-        background-color: rgba(221, 212, 255, 0.95) !important;
-        border-radius: 0 0 10px 10px;
+        background-color: rgba(255, 255, 255, 0.9) !important;
+        border-radius: 0 0 8px 8px;
     }
     
     /* Checkbox */
     .stCheckbox {
         font-size: 16px;
-        background-color: rgba(221, 212, 255, 0.7);
+        background-color: rgba(255, 255, 255, 0.9);
         padding: 10px;
         border-radius: 8px;
+        border: 1px solid rgba(0, 0, 0, 0.1);
     }
     
     /* Select boxes and other inputs */
     .stSelectbox > div > div > div {
-        background-color: rgba(221, 212, 255, 0.95) !important;
-        border-radius: 10px;
+        background-color: rgba(255, 255, 255, 0.9) !important;
+        border-radius: 8px;
     }
     
     /* Columns styling */
@@ -309,35 +322,27 @@ st.markdown("""
         border-radius: 10px;
     }
     
-    /* Get Started section buttons */
-    .get-started-button {
-        background: linear-gradient(135deg, #C8A8D8 0%, #B695C0 100%) !important;
-        color: white !important;
-        padding: 15px 25px !important;
-        border-radius: 25px !important;
-        font-weight: 500 !important;
-        box-shadow: 0 4px 15px rgba(200, 168, 216, 0.3) !important;
-        border: none !important;
-        display: inline-block !important;
-        text-decoration: none !important;
-    }
-    
     /* Responsive Design */
     @media (max-width: 768px) {
         .hero-title {
-            font-size: 32px;
+            font-size: 28px;
         }
         
         .hero-subtitle {
-            font-size: 18px;
+            font-size: 16px;
         }
         
         .stats-grid {
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: 1fr;
         }
         
         .feature-card {
             padding: 20px;
+        }
+        
+        .main .block-container {
+            padding: 1.5rem;
+            margin: 0.5rem;
         }
     }
 </style>
@@ -1209,6 +1214,7 @@ elif current_page == 'Test Cases':
                         st.error(f"**TOXIC** - {toxic_count} categories detected!")
                     else:
                         st.success("**CLEAN** - No toxicity detected!")
+
 
 
 
