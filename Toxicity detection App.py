@@ -159,9 +159,9 @@ st.markdown("""
         letter-spacing: 1px;
     }
     
-    /* Custom Button Styles - Purple Gradient */
+    /* Custom Button Styles - Pink Gradient */
     .stButton > button {
-        background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%) !important; /* Purple gradient */
+        background: linear-gradient(135deg, #F48FB1 0%, #EC407A 100%) !important;
         color: white !important;
         border: none !important;
         border-radius: 10px !important;
@@ -169,24 +169,24 @@ st.markdown("""
         font-weight: 600 !important;
         font-size: 16px !important;
         transition: all 0.3s ease !important;
-        box-shadow: 0 4px 15px rgba(156, 39, 176, 0.3) !important;
+        box-shadow: 0 4px 15px rgba(244, 143, 177, 0.3) !important;
     }
     
     .stButton > button:hover {
         transform: translateY(-2px) !important;
-        box-shadow: 0 8px 25px rgba(156, 39, 176, 0.4) !important;
-        background: linear-gradient(135deg, #7B1FA2 0%, #6A1B9A 100%) !important; /* Darker purple on hover */
+        box-shadow: 0 8px 25px rgba(244, 143, 177, 0.4) !important;
+        background: linear-gradient(135deg, #EC407A 0%, #D81B60 100%) !important;
     }
     
     /* Primary Button Variant */
     .stButton > button[data-baseweb="button"][kind="primary"] {
-        background: linear-gradient(135deg, #7B1FA2 0%, #6A1B9A 100%) !important; /* Darker purple */
-        box-shadow: 0 4px 15px rgba(123, 31, 162, 0.4) !important;
+        background: linear-gradient(135deg, #EC407A 0%, #D81B60 100%) !important;
+        box-shadow: 0 4px 15px rgba(236, 64, 122, 0.4) !important;
     }
     
     .stButton > button[data-baseweb="button"][kind="primary"]:hover {
-        background: linear-gradient(135deg, #6A1B9A 0%, #4A148C 100%) !important; /* Even darker purple on hover */
-        box-shadow: 0 8px 25px rgba(106, 27, 154, 0.5) !important;
+        background: linear-gradient(135deg, #D81B60 0%, #C2185B 100%) !important;
+        box-shadow: 0 8px 25px rgba(216, 27, 96, 0.5) !important;
     }
     
     /* Alert Styles */
@@ -208,7 +208,7 @@ st.markdown("""
     
     /* Progress Bar */
     .stProgress .st-bo {
-        background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%) !important; /* Purple gradient */
+        background: linear-gradient(135deg, #F48FB1 0%, #EC407A 100%) !important;
     }
     
     /* Sidebar */
