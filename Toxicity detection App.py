@@ -15,15 +15,31 @@ from tensorflow.keras.models import load_model
 
 st.set_page_config(page_title="Toxic Comment Classifier", layout="wide")
 
-# Add CSS styling
+# Add CSS styling with light lavender background
 st.markdown("""
 <style>
     /* Import Google Fonts */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     
-    /* Global Styles */
+    /* Global Styles with Light Lavender Background */
     .main {
         font-family: 'Inter', sans-serif;
+        background-color: #F8F6FF !important;
+    }
+    
+    /* Streamlit main container background */
+    .stApp {
+        background: linear-gradient(135deg, #F8F6FF 0%, #F0EBFF 30%, #E8E0FF 100%) !important;
+    }
+    
+    /* Main content area */
+    .main .block-container {
+        background-color: rgba(248, 246, 255, 0.8) !important;
+        border-radius: 15px;
+        padding: 2rem 1rem;
+        margin: 0 auto;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 20px rgba(147, 112, 219, 0.1);
     }
     
     /* Navigation Styles */
@@ -67,20 +83,21 @@ st.markdown("""
         opacity: 0.95;
     }
     
-    /* Feature Cards */
+    /* Feature Cards with enhanced styling for lavender background */
     .feature-card {
-        background: rgba(255, 255, 255, 0.95);
+        background: rgba(255, 255, 255, 0.98);
         border-radius: 15px;
         padding: 30px;
         margin: 15px 0;
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.06);
+        box-shadow: 0 8px 25px rgba(147, 112, 219, 0.15);
         transition: transform 0.3s ease, box-shadow 0.3s ease;
-        border: 1px solid rgba(147, 112, 219, 0.1);
+        border: 1px solid rgba(147, 112, 219, 0.2);
+        backdrop-filter: blur(10px);
     }
     
     .feature-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.12);
+        box-shadow: 0 15px 40px rgba(147, 112, 219, 0.25);
     }
     
     .feature-icon {
@@ -166,15 +183,16 @@ st.markdown("""
         border-radius: 10px;
         border: none;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        background-color: rgba(255, 255, 255, 0.9) !important;
     }
     
     /* Metric Styles */
     .metric-container {
-        background: white;
+        background: rgba(255, 255, 255, 0.95);
         border-radius: 10px;
         padding: 20px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-        border: 1px solid rgba(147, 112, 219, 0.1);
+        box-shadow: 0 4px 12px rgba(147, 112, 219, 0.1);
+        border: 1px solid rgba(147, 112, 219, 0.2);
     }
     
     /* Progress Bar */
@@ -182,14 +200,14 @@ st.markdown("""
         background: linear-gradient(135deg, #9370DB 0%, #8A2BE2 100%);
     }
     
-    /* Sidebar */
+    /* Sidebar with lavender theme */
     .css-1d391kg {
-        background: linear-gradient(180deg, #f7f7f7 0%, #e8e8e8 100%);
+        background: linear-gradient(180deg, #F8F6FF 0%, #F0EBFF 100%) !important;
     }
     
     /* Headers */
     h1, h2, h3 {
-        color: #333;
+        color: #4A4A4A;
         font-weight: 600;
     }
     
@@ -202,15 +220,17 @@ st.markdown("""
     .stDataFrame {
         border-radius: 10px;
         overflow: hidden;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        box-shadow: 0 4px 12px rgba(147, 112, 219, 0.1);
+        background-color: rgba(255, 255, 255, 0.95);
     }
     
     /* File Uploader */
     .stFileUploader {
-        background: white;
+        background: rgba(255, 255, 255, 0.9);
         border-radius: 10px;
         border: 2px dashed #9370DB;
         padding: 20px;
+        backdrop-filter: blur(5px);
     }
     
     /* Text Areas and Inputs */
@@ -221,6 +241,7 @@ st.markdown("""
         font-size: 16px;
         padding: 12px;
         transition: border-color 0.3s ease;
+        background-color: rgba(255, 255, 255, 0.95) !important;
     }
     
     .stTextArea > div > div > textarea:focus,
@@ -237,14 +258,54 @@ st.markdown("""
         font-weight: 500;
     }
     
+    .streamlit-expanderContent {
+        background-color: rgba(255, 255, 255, 0.95) !important;
+        border-radius: 0 0 10px 10px;
+    }
+    
     /* Checkbox */
     .stCheckbox {
         font-size: 16px;
+        background-color: rgba(255, 255, 255, 0.7);
+        padding: 10px;
+        border-radius: 8px;
+    }
+    
+    /* Select boxes and other inputs */
+    .stSelectbox > div > div > div {
+        background-color: rgba(255, 255, 255, 0.95) !important;
+        border-radius: 10px;
+    }
+    
+    /* Columns styling */
+    .st-emotion-cache-ocqkz7 {
+        background-color: transparent;
     }
     
     /* Custom spacing */
     .section-spacing {
         margin: 40px 0;
+    }
+    
+    /* Success/Error message styling */
+    .stSuccess {
+        background-color: rgba(212, 237, 218, 0.9) !important;
+        border-radius: 10px;
+    }
+    
+    .stError {
+        background-color: rgba(248, 215, 218, 0.9) !important;
+        border-radius: 10px;
+    }
+    
+    .stInfo {
+        background-color: rgba(209, 236, 241, 0.9) !important;
+        border-radius: 10px;
+    }
+    
+    .stWarning {
+        background-color: rgba(255, 243, 205, 0.9) !important;
+        border-radius: 10px;
     }
     
     /* Responsive Design */
@@ -1134,5 +1195,3 @@ elif current_page == 'Test Cases':
                         st.error(f"**TOXIC** - {toxic_count} categories detected!")
                     else:
                         st.success("**CLEAN** - No toxicity detected!")
-
-
