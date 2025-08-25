@@ -762,8 +762,111 @@ if current_page == 'Home':
             <p style="color: #666; line-height: 1.6;">Get instant binary classifications (1/0) for six different toxicity categories.</p>
         </div>
         """, unsafe_allow_html=True)
+# LIVE DETECTION PAGE
+elif current_page == 'Live Detection':
+    st.header("⚡ Real-time Toxicity Detection")
+    st.markdown("Enter any comment below to get instant toxicity predictions")
+    
+    user_input = st.text_area("Type a comment below:", height=120, placeholder="Enter your comment here...")
+    
+    col1, col2, col3 = st.columns([1, 1, 3])
+    with col1:
+        predict_button = st.button("🔍 Analyze Comment", type="primary", use_container_width=True)
+    with col2:
+        show_probabilities = st.checkbox("Show Probabilities")
+    
+    if predict_button:
+        if user_input.strip() == "":
+            st.warning("Please enter a valid comment.")
+        else:
+            with st.spinner("Analyzing comment..."):
+                # Get binary predictions
+                binary_result = predict_toxicity(user_input, return_probabilities=False)
+                # Get probabilities if requested
+                prob_result = predict_toxicity(user_input, return_probabilities=True)
+            
+            st.subheader("Analysis Results:")
+            
+            # Create columns for better layout
+            col1, col2 = st.columns([1, 1])
+            
+            with col1:
+                st.markdown("*Binary Classifications:*")
+                for label, prediction in binary_result.items():
+                    if prediction == 1:
+                        st.error(f"{label.replace('_', ' ').title()}: *{prediction}* (TOXIC)")
+                    else:
+                        st.success(f"{label.replace('_', ' ').title()}: *{prediction}* (NON-TOXIC)")
+            
+            if show_probabilities:
+                with col2:
+                    st.markdown("*Probability Scores:*")
+                    for label, score in prob_result.items():
+                        st.write(f"*{label.replace('_', ' ').title()}:* {score:.3f}")
+                        # Convert to Python float and ensure it's between 0 and 1
+                        normalized_score = max(0.0, min(1.0, float(score)))
+                        st.progress(normalized_score)
+            
+            # Overall toxicity indicator
+            toxic_count = sum(binary_result.values())
+            if toxic_count > 0:
+                st.error(f"*TOXIC CONTENT DETECTED* - {toxic_count} toxic categories identified!")
+            else:
+                st.success("*CLEAN CONTENT* - No toxicity detected!")
 
-st.success("Predictions Completed!")
+# BULK ANALYSIS PAGE
+elif current_page == 'Bulk Analysis':
+    st.header("📊 Bulk CSV Analysis")
+    st.markdown("*Upload a CSV file with 'text' column to get predictions for all comments.*")
+    
+    uploaded_file = st.file_uploader("Upload CSV file", type=["csv"], help="CSV must contain a column named 'text'")
+    
+    if uploaded_file is not None:
+        try:
+            data = pd.read_csv(uploaded_file)
+            
+            if "text" not in data.columns:
+                st.error("CSV must have a column named 'text'")
+                st.info("Available columns: " + ", ".join(data.columns.tolist()))
+            else:
+                st.success(f"File uploaded successfully! Found **{len(data)}** rows.")
+                
+                with st.expander("Preview Data"):
+                    st.dataframe(data.head(10))
+
+                col1, col2 = st.columns([1, 1])
+                with col1:
+                    include_probabilities = st.checkbox("Include probability scores", help="Add probability columns alongside binary predictions")
+                
+                if st.button("Run Bulk Predictions", type="primary"):
+                    # Predictions with progress bar
+                    binary_predictions = []
+                    prob_predictions = []
+                    
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
+                    
+                    for i, text in enumerate(data["text"].fillna("")):
+                        binary_preds = predict_toxicity(text, return_probabilities=False)
+                        binary_predictions.append(binary_preds)
+                        
+                        if include_probabilities:
+                            prob_preds = predict_toxicity(text, return_probabilities=True)
+                            prob_predictions.append(prob_preds)
+                        
+                        progress_bar.progress((i + 1) / len(data))
+                        status_text.text(f'Processing: {i + 1}/{len(data)} comments')
+
+                    # Create results dataframe
+                    binary_df = pd.DataFrame(binary_predictions)
+                    result_df = pd.concat([data, binary_df], axis=1)
+                    
+                    if include_probabilities:
+                        prob_df = pd.DataFrame(prob_predictions)
+                        prob_df.columns = [f"{col}_prob" for col in prob_df.columns]
+                        result_df = pd.concat([result_df, prob_df], axis=1)
+
+                    st.success("Predictions Completed!")
                     
                     # Show results preview - FIXED FOR WIDE DISPLAY
                     st.subheader("Preview Results")
@@ -812,6 +915,9 @@ st.success("Predictions Completed!")
                         type="primary",
                         help="Download the complete results with binary predictions"
                     )
+                    
+        except Exception as e:
+            st.error(f"Error processing file: {e}")
 
 # MODEL INSIGHTS PAGE
 elif current_page == 'Model Insights':
@@ -1105,6 +1211,7 @@ elif current_page == 'Test Cases':
                         st.error(f"**TOXIC** - {toxic_count} categories detected!")
                     else:
                         st.success("**CLEAN** - No toxicity detected!")
+
 
 
 
