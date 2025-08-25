@@ -350,44 +350,83 @@ st.markdown("""
 if 'current_page' not in st.session_state:
     st.session_state.current_page = 'Home'
 
+# Custom Tokenizer Class
+class CustomTokenizer:
+    def __init__(self, num_words=20000, max_len=122):
+        self.tokenizer = Tokenizer(num_words=num_words, oov_token="<OOV>")
+        self.max_len = max_len
+
+    def fit(self, texts):
+        self.tokenizer.fit_on_texts(self.clean_texts(texts))
+
+    def clean_texts(self, texts):
+        cleaned_texts = []
+        for text in texts:
+            text = text.lower()
+            text = contractions.fix(text)
+            text = re.sub(r'@\w+', '', text)
+            text = re.sub(r'http\S+|www.\S+', '', text)
+            text = emoji.demojize(text)  # Convert emojis to text
+            text = re.sub(r'[^\x00-\x7F]+', '', text)
+            text = re.sub(r'#\w+', '', text)
+            
+            # Remove all punctuation except ! and ?
+            punctuation_to_remove = string.punctuation.replace('!', '').replace('?', '')
+            text = text.translate(str.maketrans('', '', punctuation_to_remove))
+            
+            text = re.sub(r'\s+', ' ', text).strip()
+            cleaned_texts.append(text)
+        
+        return cleaned_texts
+
+    def texts_to_sequences(self, texts):
+        return self.tokenizer.texts_to_sequences(self.clean_texts(texts))
+
+    def pad_sequences(self, sequences):
+        return pad_sequences(sequences, maxlen=self.max_len, padding='post', truncating='post')
+
+    def save(self, filepath):
+        with open(filepath, 'wb') as f:
+            pickle.dump(self, f)
+
+    @staticmethod
+    def load(filepath):
+        with open(filepath, 'rb') as f:
+            return pickle.load(f)
+
+# Initialize session state for navigation
+if 'current_page' not in st.session_state:
+    st.session_state.current_page = 'Home'
+
 @st.cache_resource
 def load_bilstm_model():
-    model_path = "bilstm_model.h5"
+    try:
+        model = tf.keras.models.load_model("bilstm_model.h5")
+        return model
+    except Exception as e:
+        st.error(f"Error loading model: {e}")
+        return None
 
-    if not os.path.exists(model_path):
-        with st.spinner("Downloading BiLSTM model... Please wait."):
-            # Use direct download link (replace with your file_id)
-            file_id = "1kTfFlFAfCAiUdZO5MgCF0N0uxVNd0ZZn"
-            url = f"https://drive.google.com/uc?id={file_id}"
-            gdown.download(url, model_path, quiet=False)
-
-    # return loaded model
-    return load_model(model_path)
-
-# Load Tokenizer
 @st.cache_resource
-def load_tokenizer():
-    tokenizer_path = "tokenizer.pkl"
+def load_custom_tokenizer():
+    try:
+        # Use the static load method from your CustomTokenizer class
+        tokenizer = CustomTokenizer.load("custom_tokenizer.pkl")
+        return tokenizer
+    except Exception as e:
+        st.error(f"Error loading custom tokenizer: {e}")
+        return None
 
-    if not os.path.exists(tokenizer_path):
-        with st.spinner("Downloading tokenizer... Please wait."):
-            file_id = "1psCM-sISb3ToTc6IYhhw3nSLWqaTVAJm"
-            url = f"https://drive.google.com/uc?id={file_id}"
-            gdown.download(url, tokenizer_path, quiet=False)
+# Load model and tokenizer
+model = load_bilstm_model()
+tokenizer = load_custom_tokenizer()
+MAX_LEN = 122  # Should match tokenizer.max_len
+THRESHOLD = 0.5  # Threshold for binary classification
 
-    # Debugging check
-    with open(tokenizer_path, "rb") as handle:
-        tokenizer = pickle.load(handle)
-
-    return tokenizer
-
-def preprocess_text(text):
-    """Preprocess text for model prediction"""
-    if not isinstance(text, str):
-        text = str(text)
-    seq = tokenizer.texts_to_sequences([text])
-    padded = pad_sequences(seq, maxlen=MAX_LEN, padding="post", truncating="post")
-    return padded
+# Check if model and tokenizer loaded successfully
+if model is None or tokenizer is None:
+    st.error("Failed to load model or tokenizer. Please check if the files exist.")
+    st.stop()
 
 def predict_toxicity(text, return_probabilities=False):
     """Predict toxicity for a single text"""
@@ -1240,6 +1279,7 @@ elif current_page == 'Test Cases':
                         st.error(f"**TOXIC** - {toxic_count} categories detected!")
                     else:
                         st.success("**CLEAN** - No toxicity detected!")
+
 
 
 
