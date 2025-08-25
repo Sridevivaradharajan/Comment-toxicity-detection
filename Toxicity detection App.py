@@ -823,111 +823,195 @@ elif current_page == 'Live Detection':
                 else:
                     st.success("**CLEAN CONTENT** - No toxicity detected!")
 
-# BULK ANALYSIS PAGE
-elif current_page == 'Bulk Analysis':
-    st.header("📊 Bulk CSV Analysis")
-    st.markdown("*Upload a CSV file with 'text' column to get predictions for all comments.*")
+# Cloud-ready preview results section
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
+# After predictions are completed...
+st.success("✅ Predictions Completed!")
+
+# Show results preview with better error handling
+st.subheader("📋 Preview Results")
+try:
+    # Show a sample of results with column selection for large datasets
+    preview_rows = min(10, len(result_df))
     
-    uploaded_file = st.file_uploader("Upload CSV file", type=["csv"], help="CSV must contain a column named 'text'")
+    # Don't limit columns - show all for full width
+    preview_df = result_df.head(preview_rows).copy()
     
-    if uploaded_file is not None:
-        try:
-            data = pd.read_csv(uploaded_file)
-            
-            if "text" not in data.columns:
-                st.error("CSV must have a column named 'text'")
-                st.info("Available columns: " + ", ".join(data.columns.tolist()))
+    # Truncate only very long text for readability
+    if 'text' in preview_df.columns:
+        preview_df['text'] = preview_df['text'].astype(str).apply(
+            lambda x: x[:150] + "..." if len(str(x)) > 150 else x
+        )
+    
+    # Use full container width without expander
+    st.dataframe(
+        preview_df, 
+        use_container_width=True,
+        height=500,
+        hide_index=False
+    )
+    
+    if len(result_df) > preview_rows:
+        st.info(f"📊 Showing first {preview_rows} rows of {len(result_df):,} total results")
+        
+except Exception as e:
+    st.error(f"Error displaying preview: {str(e)}")
+    st.info("Preview unavailable, but you can still download the complete results below.")
+
+# Summary statistics with better error handling
+try:
+    st.subheader("📈 Summary Statistics")
+    labels = ["toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"]
+    
+    # Ensure binary predictions exist
+    available_labels = [label for label in labels if label in binary_df.columns]
+    
+    if not available_labels:
+        st.warning("No toxicity prediction columns found in results")
+    else:
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("Total Comments", f"{len(data):,}")
+        
+        with col2:
+            if 'toxic' in binary_df.columns:
+                toxic_comments = int((binary_df['toxic'] == 1).sum())
+                st.metric("Toxic Comments", f"{toxic_comments:,}")
             else:
-                st.success(f"File uploaded successfully! Found **{len(data)}** rows.")
-                
-                with st.expander("Preview Data"):
-                    st.dataframe(data.head(10))
+                toxic_comments = 0
+                st.metric("Toxic Comments", "N/A")
+        
+        with col3:
+            clean_comments = len(data) - toxic_comments
+            st.metric("Clean Comments", f"{clean_comments:,}")
+        
+        with col4:
+            if toxic_comments > 0:
+                toxicity_rate = (toxic_comments / len(data)) * 100
+                st.metric("Toxicity Rate", f"{toxicity_rate:.1f}%")
+            else:
+                st.metric("Toxicity Rate", "0.0%")
 
-                col1, col2 = st.columns([1, 1])
-                with col1:
-                    include_probabilities = st.checkbox("Include probability scores", help="Add probability columns alongside binary predictions")
-                
-                if st.button("Run Bulk Predictions", type="primary"):
-                    # Predictions with progress bar
-                    binary_predictions = []
-                    prob_predictions = []
-                    
-                    progress_bar = st.progress(0)
-                    status_text = st.empty()
-                    
-                    for i, text in enumerate(data["text"].fillna("")):
-                        binary_preds = predict_toxicity(text, return_probabilities=False)
-                        binary_predictions.append(binary_preds)
-                        
-                        if include_probabilities:
-                            prob_preds = predict_toxicity(text, return_probabilities=True)
-                            prob_predictions.append(prob_preds)
-                        
-                        progress_bar.progress((i + 1) / len(data))
-                        status_text.text(f'Processing: {i + 1}/{len(data)} comments')
+        # Category breakdown with Plotly (cloud-friendly)
+        st.subheader("🏷️ Category Breakdown")
+        
+        if available_labels:
+            category_counts = binary_df[available_labels].sum().sort_values(ascending=False)
+            
+            # Create interactive Plotly bar chart
+            fig = px.bar(
+                x=[label.replace('_', ' ').title() for label in category_counts.index],
+                y=category_counts.values,
+                title="Toxic Comments by Category",
+                labels={'x': 'Category', 'y': 'Number of Toxic Comments'},
+                color=category_counts.values,
+                color_continuous_scale='Reds',
+                text=category_counts.values
+            )
+            
+            # Update layout for better appearance
+            fig.update_layout(
+                showlegend=False,
+                height=500,
+                xaxis_tickangle=-45,
+                title_x=0.5,
+                margin=dict(l=50, r=50, t=80, b=100)
+            )
+            
+            # Add value labels on bars
+            fig.update_traces(texttemplate='%{text}', textposition='outside')
+            
+            st.plotly_chart(fig, use_container_width=True, key="category_breakdown")
+            
+            # Additional insights
+            if len(category_counts) > 0:
+                most_common = category_counts.index[0].replace('_', ' ').title()
+                most_common_count = category_counts.iloc[0]
+                st.info(f"💡 Most common toxic category: **{most_common}** ({most_common_count:,} comments)")
+        
+        # Distribution chart for probability scores (if available)
+        if include_probabilities and 'toxic_prob' in result_df.columns:
+            st.subheader("📊 Toxicity Score Distribution")
+            
+            # Create histogram of toxicity probabilities
+            fig_hist = px.histogram(
+                result_df,
+                x='toxic_prob',
+                nbins=50,
+                title="Distribution of Toxicity Probability Scores",
+                labels={'toxic_prob': 'Toxicity Probability', 'count': 'Number of Comments'},
+                color_discrete_sequence=['#FF6B6B']
+            )
+            
+            fig_hist.update_layout(
+                height=400,
+                title_x=0.5,
+                showlegend=False
+            )
+            
+            st.plotly_chart(fig_hist, use_container_width=True, key="toxicity_distribution")
 
-                    # Create results dataframe
-                    binary_df = pd.DataFrame(binary_predictions)
-                    result_df = pd.concat([data, binary_df], axis=1)
-                    
-                    if include_probabilities:
-                        prob_df = pd.DataFrame(prob_predictions)
-                        prob_df.columns = [f"{col}_prob" for col in prob_df.columns]
-                        result_df = pd.concat([result_df, prob_df], axis=1)
+except Exception as e:
+    st.error(f"Error generating summary statistics: {str(e)}")
+    st.info("Summary statistics unavailable, but you can still download the results.")
 
-                    st.success("Predictions Completed!")
-                    
-                    # Show results preview
-                    with st.expander("Preview Data", expanded=True):
-                        st.dataframe(data.head(10), use_container_width=True, height=300)
+# Enhanced download section
+st.subheader("⬇️ Download Results")
 
+try:
+    # Prepare download data
+    download_df = result_df.copy()
+    
+    # Generate CSV with proper encoding
+    csv_data = download_df.to_csv(index=False).encode("utf-8")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.download_button(
+            "📥 Download Complete Results (CSV)", 
+            csv_data, 
+            "toxicity_predictions.csv", 
+            "text/csv",
+            type="primary",
+            help=f"Download all {len(download_df):,} rows with predictions"
+        )
+    
+    with col2:
+        # Option to download only toxic comments
+        if 'toxic' in download_df.columns:
+            toxic_only_df = download_df[download_df['toxic'] == 1]
+            if len(toxic_only_df) > 0:
+                toxic_csv = toxic_only_df.to_csv(index=False).encode("utf-8")
+                st.download_button(
+                    "🚨 Download Toxic Comments Only",
+                    toxic_csv,
+                    "toxic_comments_only.csv",
+                    "text/csv",
+                    help=f"Download only toxic comments ({len(toxic_only_df):,} rows)"
+                )
+            else:
+                st.info("No toxic comments found to download")
 
-                    # Summary statistics
-                    st.subheader("Summary Statistics")
-                    labels = ["toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"]
-                    
-                    col1, col2, col3, col4 = st.columns(4)
-                    with col1:
-                        st.metric("Total Comments", len(data))
-                    with col2:
-                        toxic_comments = (binary_df['toxic'] == 1).sum()
-                        st.metric("Toxic Comments", toxic_comments)
-                    with col3:
-                        clean_comments = len(data) - toxic_comments
-                        st.metric("Clean Comments", clean_comments)
-                    with col4:
-                        toxicity_rate = (toxic_comments / len(data)) * 100
-                        st.metric("Toxicity Rate", f"{toxicity_rate:.1f}%")
-                    
-                    # Category breakdown
-                    st.subheader("Category Breakdown")
-                    category_counts = binary_df[labels].sum()
-                    
-                    # Use the fixed chart function
-                    fig = create_bar_chart_with_proper_margins(
-                        categories=[label.replace('_', ' ').title() for label in category_counts.index],
-                        values=category_counts.values,
-                        title="Toxic Comments by Category",
-                        ylabel="Number of Toxic Comments",
-                        colors=['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57', '#FF9FF3']
-                    )
-                    
-                    st.pyplot(fig)
-                    plt.close()
+    # File size info
+    file_size_mb = len(csv_data) / (1024 * 1024)
+    st.caption(f"📁 File size: {file_size_mb:.1f} MB")
+    
+    if file_size_mb > 50:
+        st.warning("⚠️ Large file detected. Download may take some time.")
 
-                    # Download option
-                    csv = result_df.to_csv(index=False).encode("utf-8")
-                    st.download_button(
-                        "Download Predictions as CSV", 
-                        csv, 
-                        "toxicity_predictions.csv", 
-                        "text/csv",
-                        type="primary",
-                        help="Download the complete results with binary predictions"
-                    )
-                    
-        except Exception as e:
-            st.error(f"Error processing file: {e}")
+except Exception as e:
+    st.error(f"Error preparing download: {str(e)}")
+
+# Optional: Memory cleanup for large datasets
+if len(result_df) > 10000:
+    st.info("💡 **Tip**: For very large datasets, consider processing in smaller batches to optimize performance.")
 
 # MODEL INSIGHTS PAGE
 elif current_page == 'Model Insights':
@@ -1221,6 +1305,7 @@ elif current_page == 'Test Cases':
                         st.error(f"**TOXIC** - {toxic_count} categories detected!")
                     else:
                         st.success("**CLEAN** - No toxicity detected!")
+
 
 
 
