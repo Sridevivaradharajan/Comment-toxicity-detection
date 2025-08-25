@@ -878,8 +878,9 @@ elif current_page == 'Bulk Analysis':
                     st.success("Predictions Completed!")
                     
                     # Show results preview
-                    with st.expander("Results Preview"):
-                        st.dataframe(result_df.head(10))
+                    with st.expander("Preview Data"):
+                        st.dataframe(data.head(10), use_container_width=True)
+
 
                     # Summary statistics
                     st.subheader("Summary Statistics")
@@ -1220,6 +1221,7 @@ elif current_page == 'Test Cases':
                         st.error(f"**TOXIC** - {toxic_count} categories detected!")
                     else:
                         st.success("**CLEAN** - No toxicity detected!")
+
 
 
 
