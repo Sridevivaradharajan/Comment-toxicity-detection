@@ -828,6 +828,16 @@ elif current_page == 'Bulk Analysis':
     st.header("📊 Bulk CSV Analysis")
     st.markdown("*Upload a CSV file with 'text' column to get predictions for all comments.*")
     
+    # ✅ CSS Fix for making tables stretch full width
+    st.markdown(
+        """
+        <style>
+        .stDataFrame {width: 100% !important;}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+    
     uploaded_file = st.file_uploader("Upload CSV file", type=["csv"], help="CSV must contain a column named 'text'")
     
     if uploaded_file is not None:
@@ -840,8 +850,13 @@ elif current_page == 'Bulk Analysis':
             else:
                 st.success(f"File uploaded successfully! Found **{len(data)}** rows.")
                 
-                with st.expander("Preview Data"):
-                    st.dataframe(data.head(10))
+                # ✅ Wider Preview Data
+                with st.expander("Preview Data", expanded=True):
+                    st.dataframe(
+                        data.head(10),
+                        use_container_width=True,
+                        height=400
+                    )
 
                 col1, col2 = st.columns([1, 1])
                 with col1:
@@ -877,9 +892,13 @@ elif current_page == 'Bulk Analysis':
 
                     st.success("Predictions Completed!")
                     
-                    # Show results preview - FIXED FOR WIDE DISPLAY
+                    # ✅ Wider Preview Results
                     st.subheader("Preview Results")
-                    st.dataframe(result_df.head(10), use_container_width=True)
+                    st.dataframe(
+                        result_df.head(10),
+                        use_container_width=True,
+                        height=400
+                    )
 
                     # Summary statistics
                     st.subheader("Summary Statistics")
@@ -927,6 +946,7 @@ elif current_page == 'Bulk Analysis':
                     
         except Exception as e:
             st.error(f"Error processing file: {e}")
+
 
 # MODEL INSIGHTS PAGE
 elif current_page == 'Model Insights':
@@ -1220,6 +1240,7 @@ elif current_page == 'Test Cases':
                         st.error(f"**TOXIC** - {toxic_count} categories detected!")
                     else:
                         st.success("**CLEAN** - No toxicity detected!")
+
 
 
 
