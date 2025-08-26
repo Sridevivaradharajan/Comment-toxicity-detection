@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import tensorflow as tf
 from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.preprocessing.text import Tokenizer
 import pickle
 from sklearn.metrics import classification_report, accuracy_score, precision_recall_fscore_support
 import io
@@ -12,8 +13,11 @@ import os
 import gdown
 import json
 from tensorflow.keras.models import load_model
+import re
+import string
 
 st.set_page_config(page_title="Toxic Comment Classifier", layout="wide")
+
 # Add CSS styling with #DDD4FF background and purple gradient accents for containers and buttons
 st.markdown("""
 <style>
@@ -346,6 +350,36 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# Simple text preprocessing function
+def simple_preprocess_text(text):
+    """Simple text preprocessing without external dependencies"""
+    if pd.isna(text) or text == "":
+        text = ""
+    
+    # Convert to lowercase
+    text = str(text).lower()
+    
+    # Remove URLs
+    text = re.sub(r'http\S+|www.\S+', '', text)
+    
+    # Remove @ mentions
+    text = re.sub(r'@\w+', '', text)
+    
+    # Remove hashtags
+    text = re.sub(r'#\w+', '', text)
+    
+    # Remove non-ASCII characters
+    text = re.sub(r'[^\x00-\x7F]+', '', text)
+    
+    # Remove all punctuation except ! and ?
+    punctuation_to_remove = string.punctuation.replace('!', '').replace('?', '')
+    text = text.translate(str.maketrans('', '', punctuation_to_remove))
+    
+    # Remove extra whitespace
+    text = re.sub(r'\s+', ' ', text).strip()
+    
+    return text
+
 # Custom Tokenizer Class
 class CustomTokenizer:
     def __init__(self, num_words=20000, max_len=122):
@@ -358,21 +392,8 @@ class CustomTokenizer:
     def clean_texts(self, texts):
         cleaned_texts = []
         for text in texts:
-            text = text.lower()
-            text = contractions.fix(text)
-            text = re.sub(r'@\w+', '', text)
-            text = re.sub(r'http\S+|www.\S+', '', text)
-            text = emoji.demojize(text)  # Convert emojis to text
-            text = re.sub(r'[^\x00-\x7F]+', '', text)
-            text = re.sub(r'#\w+', '', text)
-            
-            # Remove all punctuation except ! and ?
-            punctuation_to_remove = string.punctuation.replace('!', '').replace('?', '')
-            text = text.translate(str.maketrans('', '', punctuation_to_remove))
-            
-            text = re.sub(r'\s+', ' ', text).strip()
-            cleaned_texts.append(text)
-        
+            cleaned_text = simple_preprocess_text(text)
+            cleaned_texts.append(cleaned_text)
         return cleaned_texts
 
     def texts_to_sequences(self, texts):
@@ -460,16 +481,28 @@ def load_custom_tokenizer():
             return None
 
 # Load model and tokenizer
-model = load_bilstm_model()
-tokenizer = load_custom_tokenizer()
-MAX_LEN = 122  # Should match tokenizer.max_len
-THRESHOLD = 0.5  # Threshold for binary classification
+try:
+    model = load_bilstm_model()
+    tokenizer = load_custom_tokenizer()
+    MAX_LEN = 122  # Should match tokenizer.max_len
+    THRESHOLD = 0.5  # Threshold for binary classification
 
-# Check if model and tokenizer loaded successfully
-if model is None or tokenizer is None:
-    st.error("Failed to load model or tokenizer. Please check if the files exist.")
+    # Check if model and tokenizer loaded successfully
+    if model is None or tokenizer is None:
+        st.error("Failed to load model or tokenizer. Please check if the files exist.")
+        st.stop()
+except Exception as e:
+    st.error(f"Error initializing model: {str(e)}")
+    st.info("Note: Model will be downloaded on first run. This may take a few minutes.")
     st.stop()
-    
+
+def preprocess_text(text):
+    """Preprocess text and return sequences ready for prediction"""
+    processed_text = simple_preprocess_text(text)
+    sequences = tokenizer.texts_to_sequences([processed_text])
+    padded_sequences = tokenizer.pad_sequences(sequences)
+    return padded_sequences
+
 def predict_toxicity(text, return_probabilities=False):
     """Predict toxicity for a single text"""
     processed = preprocess_text(text)
@@ -662,23 +695,6 @@ def evaluate_model_performance():
         'true_labels': y_true
     }
 
-# Load model and tokenizer only after functions are defined
-@st.cache_resource
-def initialize_model():
-    model = load_bilstm_model()
-    tokenizer = load_tokenizer()
-    return model, tokenizer
-
-# Initialize the app
-try:
-    model, tokenizer = initialize_model()
-    MAX_LEN = 122  # Based on preprocessing
-    THRESHOLD = 0.5  # Threshold for binary classification
-        
-except Exception as e:
-    st.error(f"Error initializing model: {str(e)}")
-    st.info("Note: Model will be downloaded on first run. This may take a few minutes.")
-
 # Navigation System
 def render_navigation():
     st.markdown('<div class="nav-title">Toxic Comment Detection System</div>', unsafe_allow_html=True)
@@ -867,10 +883,10 @@ elif current_page == 'Live Detection':
         comments = [c.strip() for c in user_input.split("\n") if c.strip()]
         
         if not comments:
-            st.warning("⚠️ Please enter at least one valid comment.")
+            st.warning("Please enter at least one valid comment.")
         else:
             for idx, comment in enumerate(comments, start=1):
-                st.subheader(f"💬 Comment {idx}:")
+                st.subheader(f"Comment {idx}:")
                 
                 with st.spinner("Analyzing..."):
                     # Get binary predictions
@@ -909,7 +925,7 @@ elif current_page == 'Bulk Analysis':
     st.header("📊 Bulk CSV Analysis")
     st.markdown("*Upload a CSV file with 'text' column to get predictions for all comments.*")
     
-    # ✅ CSS Fix for making tables stretch full width
+    # CSS Fix for making tables stretch full width
     st.markdown(
         """
         <style>
@@ -931,7 +947,7 @@ elif current_page == 'Bulk Analysis':
             else:
                 st.success(f"File uploaded successfully! Found **{len(data)}** rows.")
                 
-                # ✅ Wider Preview Data
+                # Wider Preview Data
                 with st.expander("Preview Data", expanded=True):
                     st.dataframe(
                         data.head(10),
@@ -973,7 +989,7 @@ elif current_page == 'Bulk Analysis':
 
                     st.success("Predictions Completed!")
                     
-                    # ✅ Wider Preview Results
+                    # Wider Preview Results
                     st.subheader("Preview Results")
                     st.dataframe(
                         result_df.head(10),
@@ -1109,7 +1125,7 @@ elif current_page == 'Model Insights':
         st.dataframe(metrics_df, use_container_width=True)
         
         # Visualization
-        st.subheader("📈 Performance Visualization")
+        st.subheader("Performance Visualization")
         
         col1, col2 = st.columns(2)
         
@@ -1153,7 +1169,7 @@ elif current_page == 'Model Insights':
             plt.close()
 
         # Detailed Test Results
-        st.subheader("🔍 Detailed Test Results")
+        st.subheader("Detailed Test Results")
         with st.expander("View All Test Predictions vs Ground Truth"):
             test_results = []
             for i, item in enumerate(evaluation_results['test_data']):
@@ -1321,29 +1337,3 @@ elif current_page == 'Test Cases':
                         st.error(f"**TOXIC** - {toxic_count} categories detected!")
                     else:
                         st.success("**CLEAN** - No toxicity detected!")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
