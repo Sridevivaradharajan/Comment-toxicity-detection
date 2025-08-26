@@ -413,20 +413,30 @@ def load_bilstm_model():
     return load_model(model_path)
 
 # Load Tokenizer
+import os
+import pickle
+import gdown
+import streamlit as st
+
+# Load Custom Tokenizer
 @st.cache_resource
 def load_custom_tokenizer():
     tokenizer_path = "custom_tokenizer.pkl"
 
+    # Download from Google Drive if not exists
     if not os.path.exists(tokenizer_path):
+        file_id = "19Bwmqij3CLSYsGOT1Z7kVMovsuM8CHlY"
+        url = f"https://drive.google.com/uc?id={file_id}"
         with st.spinner("Downloading tokenizer... Please wait."):
-            file_id = "19Bwmqij3CLSYsGOT1Z7kVMovsuM8CHlY"
-            url = f"https://drive.google.com/uc?id={file_id}"
-            gdown.download(url, tokenizer_path, quiet=False)
+            gdown.download(url, tokenizer_path, quiet=False, fuzzy=True)
 
-    # Debugging check
-    with open(tokenizer_path, "rb") as handle:
-        tokenizer = pickle.load(handle)
-
+    # Load the tokenizer
+    try:
+        tokenizer = pickle.load(open(tokenizer_path, "rb"))
+        st.success("Tokenizer loaded successfully!")
+    except Exception as e:
+        st.error(f"Failed to load tokenizer: {e}")
+        st.stop()
     return tokenizer
 
 # Load model and tokenizer
@@ -1291,6 +1301,7 @@ elif current_page == 'Test Cases':
                         st.error(f"**TOXIC** - {toxic_count} categories detected!")
                     else:
                         st.success("**CLEAN** - No toxicity detected!")
+
 
 
 
