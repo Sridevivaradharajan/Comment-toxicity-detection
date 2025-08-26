@@ -346,9 +346,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Initialize session state for navigation
-if 'current_page' not in st.session_state:
-    st.session_state.current_page = 'Home'
 
 # Custom Tokenizer Class
 class CustomTokenizer:
@@ -401,43 +398,67 @@ if 'current_page' not in st.session_state:
 @st.cache_resource
 def load_bilstm_model():
     model_path = "bilstm_model.h5"
-
     if not os.path.exists(model_path):
-        with st.spinner("Downloading BiLSTM model... Please wait."):
-            # Use direct download link (replace with your file_id)
-            file_id = "1qJnieGfXN3zz6vpqcYV7uNDVp5FFHCVf"
-            url = f"https://drive.google.com/uc?id={file_id}"
-            gdown.download(url, model_path, quiet=False)
+        try:
+            with st.spinner("Downloading BiLSTM model... Please wait."):
+                file_id = "1qJnieGfXN3zz6vpqcYV7uNDVp5FFHCVf"
+                url = f"https://drive.google.com/uc?id={file_id}"
+                gdown.download(url, model_path, quiet=False)
+        except Exception as e:
+            st.error(f"Error downloading model: {e}")
+            return None
+    
+    try:
+        return tf.keras.models.load_model(model_path)
+    except Exception as e:
+        st.error(f"Error loading model: {e}")
+        return None
 
-    # return loaded model
-    return load_model(model_path)
-
-# Load Tokenizer
-import os
-import pickle
-import gdown
-import streamlit as st
-
-# Load Custom Tokenizer
 @st.cache_resource
 def load_custom_tokenizer():
     tokenizer_path = "custom_tokenizer.pkl"
-
-    # Download from Google Drive if not exists
+    
+    # Download tokenizer if it doesn't exist
     if not os.path.exists(tokenizer_path):
-        file_id = "19Bwmqij3CLSYsGOT1Z7kVMovsuM8CHlY"
-        url = f"https://drive.google.com/uc?id={file_id}"
-        with st.spinner("Downloading tokenizer... Please wait."):
-            gdown.download(url, tokenizer_path, quiet=False, fuzzy=True)
-
-    # Load the tokenizer
+        try:
+            with st.spinner("Downloading tokenizer... Please wait."):
+                file_id = "19Bwmqij3CLSYsGOT1Z7kVMovsuM8CHlY"
+                url = f"https://drive.google.com/uc?id={file_id}"
+                gdown.download(url, tokenizer_path, quiet=False)
+        except Exception as e:
+            st.error(f"Error downloading tokenizer: {e}")
+            return None
+    
+    # Load tokenizer with proper error handling
     try:
-        tokenizer = pickle.load(open(tokenizer_path, "rb"))
-        st.success("Tokenizer loaded successfully!")
+        # First, try to load using CustomTokenizer.load() method
+        tokenizer = CustomTokenizer.load(tokenizer_path)
+        
+        # Verify it's properly loaded
+        if not hasattr(tokenizer, 'tokenizer') or not hasattr(tokenizer, 'max_len'):
+            st.error("Loaded tokenizer is missing required attributes")
+            return None
+            
+        return tokenizer
+        
     except Exception as e:
-        st.error(f"Failed to load tokenizer: {e}")
-        st.stop()
-    return tokenizer
+        st.error(f"Error loading custom tokenizer with CustomTokenizer.load(): {e}")
+        
+        # Fallback: Try generic pickle loading
+        try:
+            with open(tokenizer_path, "rb") as handle:
+                tokenizer = pickle.load(handle)
+            
+            # Check if it's a CustomTokenizer instance
+            if hasattr(tokenizer, 'texts_to_sequences') and hasattr(tokenizer, 'pad_sequences'):
+                return tokenizer
+            else:
+                st.error("Loaded object is not a valid CustomTokenizer instance")
+                return None
+                
+        except Exception as e2:
+            st.error(f"Error with fallback pickle loading: {e2}")
+            return None
 
 # Load model and tokenizer
 model = load_bilstm_model()
@@ -1301,6 +1322,7 @@ elif current_page == 'Test Cases':
                         st.error(f"**TOXIC** - {toxic_count} categories detected!")
                     else:
                         st.success("**CLEAN** - No toxicity detected!")
+
 
 
 
