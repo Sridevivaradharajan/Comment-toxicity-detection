@@ -346,7 +346,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-
 # Custom Tokenizer Class
 class CustomTokenizer:
     def __init__(self, num_words=20000, max_len=122):
@@ -470,7 +469,7 @@ THRESHOLD = 0.5  # Threshold for binary classification
 if model is None or tokenizer is None:
     st.error("Failed to load model or tokenizer. Please check if the files exist.")
     st.stop()
-
+    
 def predict_toxicity(text, return_probabilities=False):
     """Predict toxicity for a single text"""
     processed = preprocess_text(text)
@@ -1322,6 +1321,7 @@ elif current_page == 'Test Cases':
                         st.error(f"**TOXIC** - {toxic_count} categories detected!")
                     else:
                         st.success("**CLEAN** - No toxicity detected!")
+
 
 
 
