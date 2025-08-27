@@ -355,232 +355,64 @@ st.markdown("""
 if 'current_page' not in st.session_state:
     st.session_state.current_page = 'Home'
 
-# Google Drive file IDs - REPLACE THESE WITH YOUR ACTUAL FILE IDs (IDs OR FULL SHARE URLS ARE OK)
+# Google Drive FOLDER IDs (replace with yours)
 GOOGLE_DRIVE_CONFIG = {
-    "tokenizer_file_id": "1tVNqozfIRQPIFI7AQ6pAVZDZNG9J6v2I",
-    "model_file_id": "1PykKw6x1aRw8nkyhe0bZGV8allQId3NN",
+    "tokenizer_folder_id": "1WhjLbV8f9jFqiXrUX0O9-mT8En22ZzWQ",  # tokenizer folder
+    "model_folder_id": "14N07EGxwUJ4p0gWH8PTJB8D9Cc5EH7_w",      # model folder
 }
 
-def _extract_drive_id(value: str) -> str | None:
-    """Return a Google Drive file id from either a raw id or a share/download URL."""
-    if not value:
-        return None
-    value = value.strip()
-    # Already an ID?
-    if _is_probable_drive_id(value):
-        return value
-    # Try to pull from common URL formats
-    import re
-    patterns = [
-        r"/file/d/([a-zA-Z0-9_-]{10,})",      # .../file/d/<id>/view
-        r"[?&]id=([a-zA-Z0-9_-]{10,})",       # ...?id=<id>
-        r"/uc\?export=download&(?:.*&)?id=([a-zA-Z0-9_-]{10,})",
-        r"/open\?(?:.*&)?id=([a-zA-Z0-9_-]{10,})",
-    ]
-    for pat in patterns:
-        m = re.search(pat, value)
-        if m:
-            return m.group(1)
-    return None
+def download_folder_from_gdrive(folder_id, output_path, file_type="model"):
+    """Download a Google Drive folder (containing model/tokenizer files)."""
+    try:
+        url = f"https://drive.google.com/drive/folders/{folder_id}"
+        os.makedirs(output_path, exist_ok=True)
+        with st.spinner(f"Downloading {file_type} folder from Google Drive..."):
+            gdown.download_folder(url, quiet=False, use_cookies=False, output=output_path)
+        st.success(f"{file_type.title()} folder downloaded successfully!")
+        return True
+    except Exception as e:
+        st.error(f"Error downloading {file_type} folder: {e}")
+        return False
 
-def _is_probable_drive_id(value: str) -> bool:
-    """Heuristic: Drive IDs are URL-safe, usually 25+ chars of [A-Za-z0-9_-]."""
-    import re
-    return bool(re.fullmatch(r"[A-Za-z0-9_-]{10,}", value or ""))
-
-def validate_and_normalize_file_ids(config: dict) -> tuple[bool, dict]:
-    """
-    Validate presence & shape of Drive IDs. Accepts either raw IDs or full URLs.
-    Returns (ok, normalized_config_with_ids_only).
-    """
-    normalized = dict(config)
+def validate_folder_ids(config: dict) -> tuple[bool, dict]:
+    """Check that folder IDs are provided and look valid."""
     problems = []
-
-    for key in ["tokenizer_file_id", "model_file_id"]:
-        raw = normalized.get(key, "") or ""
-        extracted = _extract_drive_id(raw)
-        if not extracted:
-            problems.append(f"- `{key}` is missing or not a valid Google Drive file ID/URL.")
-        elif not _is_probable_drive_id(extracted):
-            problems.append(f"- `{key}` doesn’t look like a valid Drive file ID.")
-        else:
-            normalized[key] = extracted  # store the clean ID
-
+    for key in ["tokenizer_folder_id", "model_folder_id"]:
+        val = config.get(key, "").strip()
+        if not val or val.startswith("YOUR_"):
+            problems.append(f"- `{key}` is missing. Please set the Google Drive folder ID.")
     if problems:
-        st.error("Google Drive file ID validation failed:\n" + "\n".join(problems))
-        st.info("Tip: paste the full share URL (…/file/d/<ID>/view) or just the file ID.")
+        st.error("Google Drive folder validation failed:\n" + "\n".join(problems))
+        st.info("Tip: Folder ID is the part after `/folders/` in your Drive URL.")
         return False, config
-    return True, normalized
-
-def _gdrive_download_url(file_id: str) -> str:
-    return f"https://drive.google.com/uc?id={file_id}"
-
-def download_from_gdrive(file_id, output_path, file_type="tokenizer"):
-    """Download files from Google Drive with progress tracking (accepts raw ID or URL)."""
-    try:
-        # Normalize input (ID or URL)
-        norm_id = _extract_drive_id(file_id)
-        if not norm_id:
-            st.error(f"Invalid Google Drive {file_type} reference: {file_id}")
-            return False
-
-        url = _gdrive_download_url(norm_id)
-
-        # Create directory for the file if needed
-        dirn = os.path.dirname(output_path)
-        if dirn:
-            os.makedirs(dirn, exist_ok=True)
-
-        with st.spinner(f"Downloading {file_type} from Google Drive..."):
-            # fuzzy=True lets gdown accept IDs/URLs; we pass a neat url anyway
-            gdown.download(url, output_path, quiet=False, fuzzy=True)
-
-        if os.path.exists(output_path):
-            st.success(f"{file_type.title()} downloaded successfully!")
-            return True
-        else:
-            st.error(f"Failed to download {file_type}")
-            return False
-
-    except Exception as e:
-        st.error(f"Error downloading {file_type}: {str(e)}")
-        return False
-
-def extract_zip_file(zip_path, extract_to):
-    """Extract zip file to specified directory"""
-    try:
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall(extract_to)
-        os.remove(zip_path)
-        return True
-    except Exception as e:
-        st.error(f"Error extracting zip file: {str(e)}")
-        return False
-
-def normalize_extracted_folder(path):
-    """Fix one-level nesting (path/path/* -> path/*)."""
-    try:
-        if not os.path.isdir(path):
-            return
-        contents = os.listdir(path)
-        if len(contents) == 1:
-            inner = os.path.join(path, contents[0])
-            if os.path.isdir(inner):
-                for item in os.listdir(inner):
-                    shutil.move(os.path.join(inner, item), path)
-                shutil.rmtree(inner)
-    except Exception as e:
-        st.warning(f"Normalization skipped: {e}")
-
-def _ensure_tokenizer_dir(expected_path: str) -> bool:
-    """
-    Ensure a directory named `expected_path` exists and contains tokenizer files (vocab.txt).
-    If the zip extracted under a different folder name, find it and move/rename.
-    """
-    # already good?
-    if os.path.isdir(expected_path) and os.path.exists(os.path.join(expected_path, "vocab.txt")):
-        return True
-
-    # search top-level dirs for a vocab.txt
-    for d in os.listdir("."):
-        if os.path.isdir(d) and os.path.exists(os.path.join(d, "vocab.txt")):
-            if d != expected_path:
-                shutil.rmtree(expected_path, ignore_errors=True)
-                shutil.move(d, expected_path)
-            return True
-    return False
-
-def _ensure_model_dir(expected_path: str) -> bool:
-    """
-    Ensure a directory named `expected_path` exists and contains TF model files.
-    Expect: config.json AND (tf_model.h5 OR saved_model.pb).
-    """
-    def has_tf_weights(p):
-        return os.path.exists(os.path.join(p, "config.json")) and (
-            os.path.exists(os.path.join(p, "tf_model.h5")) or
-            os.path.exists(os.path.join(p, "saved_model.pb"))
-        )
-
-    if os.path.isdir(expected_path) and has_tf_weights(expected_path):
-        return True
-
-    # search top-level dirs
-    for d in os.listdir("."):
-        if os.path.isdir(d) and has_tf_weights(d):
-            if d != expected_path:
-                shutil.rmtree(expected_path, ignore_errors=True)
-                shutil.move(d, expected_path)
-            return True
-    return False
+    return True, config
 
 @st.cache_resource
 def load_bert_model_and_tokenizer():
-    """Load BERT model and tokenizer with cloud deployment support"""
+    """Load BERT model and tokenizer (Google Drive FOLDER version)."""
     try:
-        # Define paths for cloud deployment (no './')
         tokenizer_path = "bert_tokenizer"
         model_path = "bert_model"
-        tokenizer_zip_path = "bert_tokenizer.zip"
-        model_zip_path = "bert_model.zip"
 
-        # Validate & normalize Drive IDs (accept URLs)
-        ok, normalized_ids = validate_and_normalize_file_ids(GOOGLE_DRIVE_CONFIG)
+        # Validate folder IDs
+        ok, cfg = validate_folder_ids(GOOGLE_DRIVE_CONFIG)
         if not ok:
             return None, None
 
-        # --- Step 1: If already present, try to load ---
-        if os.path.exists(tokenizer_path) and os.path.exists(model_path):
-            st.info("Loading existing BERT model files...")
-            try:
-                tokenizer = BertTokenizer.from_pretrained(tokenizer_path, local_files_only=True)
-                model = TFBertForSequenceClassification.from_pretrained(model_path, local_files_only=True)
-                st.success("BERT model and tokenizer loaded successfully!")
-                return tokenizer, model
-            except Exception as e:
-                st.warning(f"Error loading existing files: {e}. Will download fresh copies.")
-                shutil.rmtree(tokenizer_path, ignore_errors=True)
-                shutil.rmtree(model_path, ignore_errors=True)
-
-        st.info("BERT model files not found. Downloading from Google Drive...")
-
-        # --- Step 2: Download tokenizer zip ---
+        # Download tokenizer if not already present
         if not os.path.exists(tokenizer_path):
-            if download_from_gdrive(normalized_ids["tokenizer_file_id"], tokenizer_zip_path, "tokenizer"):
-                if not extract_zip_file(tokenizer_zip_path, "."):
-                    return None, None
-                normalize_extracted_folder(tokenizer_path)
-                if not _ensure_tokenizer_dir(tokenizer_path):
-                    st.error(
-                        "Tokenizer folder not found or missing files. "
-                        "Expected a folder containing at least `vocab.txt`."
-                    )
-                    return None, None
-                st.success("Tokenizer extracted successfully!")
-            else:
+            if not download_folder_from_gdrive(cfg["tokenizer_folder_id"], tokenizer_path, "tokenizer"):
                 return None, None
 
-        # --- Step 3: Download model zip ---
+        # Download model if not already present
         if not os.path.exists(model_path):
-            if download_from_gdrive(normalized_ids["model_file_id"], model_zip_path, "model"):
-                if not extract_zip_file(model_zip_path, "."):
-                    return None, None
-                normalize_extracted_folder(model_path)
-                if not _ensure_model_dir(model_path):
-                    st.error(
-                        "Model folder not found or missing files. "
-                        "Expected `config.json` and `tf_model.h5` (or `saved_model.pb`)."
-                    )
-                    return None, None
-                st.success("Model extracted successfully!")
-            else:
+            if not download_folder_from_gdrive(cfg["model_folder_id"], model_path, "model"):
                 return None, None
 
-        # --- Step 4: Load final model + tokenizer ---
+        # Load tokenizer and model
         st.info("Loading BERT model and tokenizer...")
         tokenizer = BertTokenizer.from_pretrained(tokenizer_path, local_files_only=True)
-        model = TFBertForSequenceClassification.from_pretrained(
-            model_path, num_labels=6, local_files_only=True
-        )
+        model = TFBertForSequenceClassification.from_pretrained(model_path, num_labels=6, local_files_only=True)
 
         st.success("BERT model and tokenizer loaded successfully!")
         return tokenizer, model
@@ -589,12 +421,12 @@ def load_bert_model_and_tokenizer():
         st.error(f"Error loading BERT model or tokenizer: {str(e)}")
         st.error("""
         **Troubleshooting tips:**
-        1. Ensure your Google Drive files are publicly accessible
-        2. Verify the file IDs are correct (raw ID or full share URL)
-        3. Upload ZIP files, not folders
-        4. ZIP must contain: 
-           - tokenizer: vocab.txt (+ tokenizer_config.json if available)
+        1. Ensure your Google Drive folders are publicly accessible
+        2. Verify the folder IDs are correct
+        3. Folder must contain:
+           - tokenizer: vocab.txt (+ tokenizer_config.json, special_tokens_map.json if available)
            - model: config.json + tf_model.h5 (or saved_model.pb)
+        4. No nested subfolders — files should be directly inside the folder
         """)
         return None, None
 
@@ -610,24 +442,26 @@ THRESHOLD = 0.5  # Threshold for binary classification
 if model is None or tokenizer is None:
     st.error("Failed to load BERT model or tokenizer.")
     st.info("""
-    **Setup Instructions for Cloud Deployment:**
+    **Setup Instructions for Cloud Deployment (Folder Version):**
     
     1. **Prepare your model files:**
-       - Create a ZIP file of your bert_tokenizer folder
-       - Create a ZIP file of your bert_model folder
+       - Put your `bert_tokenizer` folder in Google Drive
+       - Put your `bert_model` folder in Google Drive
     
-    2. **Upload to Google Drive:**
-       - Upload both ZIP files to Google Drive
-       - Make them publicly accessible (Anyone with the link can view)
+    2. **Share:**
+       - Right-click → Share → Anyone with link can view
     
-    3. **Get file IDs:**
-       - Right-click each file → Share → Copy link
-       - Paste the full link or just the file ID into GOOGLE_DRIVE_CONFIG
+    3. **Get folder IDs:**
+       - Example link: https://drive.google.com/drive/folders/ABC123XYZ
+       - Folder ID = `ABC123XYZ`
+    
+    4. **Update the code:**
+       - Replace `YOUR_TOKENIZER_FOLDER_ID` and `YOUR_MODEL_FOLDER_ID` in GOOGLE_DRIVE_CONFIG
     """)
     st.stop()
 
 def preprocess_text_for_bert(text):
-    """Preprocess text for BERT (minimal preprocessing needed)"""
+    """Preprocess text for BERT (minimal preprocessing needed)."""
     if not isinstance(text, str):
         text = str(text)
     text = text.strip()
@@ -1462,6 +1296,7 @@ elif current_page == 'Test Cases':
                         st.error(f"**TOXIC** - {toxic_count} categories detected by BERT!")
                     else:
                         st.success("**CLEAN** - No toxicity detected by BERT!")
+
 
 
 
