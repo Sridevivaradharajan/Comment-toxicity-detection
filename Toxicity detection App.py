@@ -928,11 +928,11 @@ elif current_page == 'Bulk Analysis':
                     status_text = st.empty()
                     
                     for i, text in enumerate(data["text"].fillna("")):
-                        binary_preds = predict_toxicity(text, return_probabilities=False)
+                        binary_preds = predict_toxicity_bert(text, return_probabilities=False)
                         binary_predictions.append(binary_preds)
                         
                         if include_probabilities:
-                            prob_preds = predict_toxicity(text, return_probabilities=True)
+                            prob_preds = predict_toxicity_bert(text, return_probabilities=True)
                             prob_predictions.append(prob_preds)
                         
                         progress_bar.progress((i + 1) / len(data))
@@ -1309,6 +1309,7 @@ elif current_page == 'Test Cases':
                         st.error(f"**TOXIC** - {toxic_count} categories detected by BERT!")
                     else:
                         st.success("**CLEAN** - No toxicity detected by BERT!")
+
 
 
 
