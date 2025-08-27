@@ -409,7 +409,6 @@ def validate_folder_ids(config: dict) -> tuple[bool, dict]:
 
 @st.cache_resource
 def load_bert_model_and_tokenizer():
-    """Load BERT model and tokenizer (Google Drive FOLDER version)."""
     try:
         tokenizer_path = "bert_tokenizer"
         model_path = "bert_model"
@@ -430,7 +429,6 @@ def load_bert_model_and_tokenizer():
                 return None, None
 
         # Load tokenizer and model
-        st.info("Loading BERT model and tokenizer...")
         tokenizer = BertTokenizer.from_pretrained(tokenizer_path, local_files_only=True)
         model = TFBertForSequenceClassification.from_pretrained(model_path, num_labels=6, local_files_only=True)
         
@@ -1315,6 +1313,7 @@ elif current_page == 'Test Cases':
                         st.error(f"**TOXIC** - {toxic_count} categories detected by BERT!")
                     else:
                         st.success("**CLEAN** - No toxicity detected by BERT!")
+
 
 
 
