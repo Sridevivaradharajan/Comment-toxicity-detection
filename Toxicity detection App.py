@@ -949,9 +949,9 @@ elif current_page == 'Bulk Analysis':
 
                     st.success("Predictions Completed!")
                     
-                    # Show results preview with enhanced width
+                    # Show results preview with wider table
                     with st.expander("Preview Results", expanded=True):
-                        # Method 1: Force wider table with custom CSS
+                        # Custom CSS to force wider table
                         st.markdown("""
                         <style>
                         .stDataFrame > div {
@@ -962,46 +962,13 @@ elif current_page == 'Bulk Analysis':
                             width: 100% !important;
                             max-width: none !important;
                         }
-                        </style>
-                        """, unsafe_allow_html=True)
-                        
-                        # Display the dataframe with multiple width parameters
-                        st.dataframe(
-                            result_df.head(10), 
-                            use_container_width=True,
-                            height=400,
-                            width=1200  # Set explicit width
-                        )
-                        
-                        # Alternative: Show as HTML table for even more control
-                        st.markdown("**Alternative Full-Width View:**")
-                        st.markdown(
-                            result_df.head(10).to_html(escape=False, table_id="wide-table"),
-                            unsafe_allow_html=True
-                        )
-                        
-                        # Add CSS for the HTML table
-                        st.markdown("""
-                        <style>
-                        #wide-table {
+                        div[data-testid="stExpander"] > div > div > div > div {
                             width: 100% !important;
-                            font-size: 12px;
-                            border-collapse: collapse;
-                        }
-                        #wide-table th, #wide-table td {
-                            border: 1px solid #ddd;
-                            padding: 6px;
-                            text-align: left;
-                        }
-                        #wide-table th {
-                            background-color: #f2f2f2;
-                            font-weight: bold;
-                        }
-                        #wide-table tr:nth-child(even) {
-                            background-color: #f9f9f9;
                         }
                         </style>
                         """, unsafe_allow_html=True)
+                        
+                        st.dataframe(result_df.head(10), use_container_width=True, height=400)
 
                     # Summary statistics
                     st.subheader("Summary Statistics")
@@ -1342,6 +1309,7 @@ elif current_page == 'Test Cases':
                         st.error(f"**TOXIC** - {toxic_count} categories detected by BERT!")
                     else:
                         st.success("**CLEAN** - No toxicity detected by BERT!")
+
 
 
 
