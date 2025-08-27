@@ -4,21 +4,21 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import tensorflow as tf
-from tensorflow.keras.preprocessing.sequence import pad_sequences
-from tensorflow.keras.preprocessing.text import Tokenizer
-import pickle
+from transformers import BertTokenizer, TFBertForSequenceClassification
 from sklearn.metrics import classification_report, accuracy_score, precision_recall_fscore_support
 import io
 import os
-import gdown
 import json
-from tensorflow.keras.models import load_model
 import re
 import string
+import gdown
+import zipfile
+import shutil
+from pathlib import Path
 
 st.set_page_config(page_title="Toxic Comment Classifier", layout="wide")
 
-# Add CSS styling with #DDD4FF background and purple gradient accents for containers and buttons
+# Add CSS styling with #DDD4FF background and pink gradient accents for containers and buttons
 st.markdown("""
 <style>
     /* Import Google Fonts */
@@ -31,17 +31,18 @@ st.markdown("""
     }
     
     /* Streamlit main container background */
-    /* Global background stays lavender */
     .stApp {
         background-color: #DDD4FF !important;
     }
-
-    /* Keep block container transparent so lavender shows */
+    
+    /* Main content area - Pink Gradient Container */
     .main .block-container {
-        background: transparent !important;
+        background: linear-gradient(135deg, #F8BBD0 0%, #F48FB1 100%) !important;
         border-radius: 15px;
         padding: 2rem;
         margin: 1rem auto;
+        box-shadow: 0 8px 25px rgba(244, 143, 177, 0.2);
+        border: 1px solid rgba(244, 143, 177, 0.3);
     }
     
     /* Navigation Styles */
@@ -350,171 +351,224 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Simple text preprocessing function
-def simple_preprocess_text(text):
-    """Simple text preprocessing without external dependencies"""
-    if pd.isna(text) or text == "":
-        text = ""
-    
-    # Convert to lowercase
-    text = str(text).lower()
-    
-    # Remove URLs
-    text = re.sub(r'http\S+|www.\S+', '', text)
-    
-    # Remove @ mentions
-    text = re.sub(r'@\w+', '', text)
-    
-    # Remove hashtags
-    text = re.sub(r'#\w+', '', text)
-    
-    # Remove non-ASCII characters
-    text = re.sub(r'[^\x00-\x7F]+', '', text)
-    
-    # Remove all punctuation except ! and ?
-    punctuation_to_remove = string.punctuation.replace('!', '').replace('?', '')
-    text = text.translate(str.maketrans('', '', punctuation_to_remove))
-    
-    # Remove extra whitespace
-    text = re.sub(r'\s+', ' ', text).strip()
-    
-    return text
-
-# Custom Tokenizer Class
-class CustomTokenizer:
-    def __init__(self, num_words=20000, max_len=122):
-        self.tokenizer = Tokenizer(num_words=num_words, oov_token="<OOV>")
-        self.max_len = max_len
-
-    def fit(self, texts):
-        self.tokenizer.fit_on_texts(self.clean_texts(texts))
-
-    def clean_texts(self, texts):
-        cleaned_texts = []
-        for text in texts:
-            cleaned_text = simple_preprocess_text(text)
-            cleaned_texts.append(cleaned_text)
-        return cleaned_texts
-
-    def texts_to_sequences(self, texts):
-        return self.tokenizer.texts_to_sequences(self.clean_texts(texts))
-
-    def pad_sequences(self, sequences):
-        return pad_sequences(sequences, maxlen=self.max_len, padding='post', truncating='post')
-
-    def save(self, filepath):
-        with open(filepath, 'wb') as f:
-            pickle.dump(self, f)
-
-    @staticmethod
-    def load(filepath):
-        with open(filepath, 'rb') as f:
-            return pickle.load(f)
-
 # Initialize session state for navigation
 if 'current_page' not in st.session_state:
     st.session_state.current_page = 'Home'
 
-@st.cache_resource
-def load_bilstm_model():
-    model_path = "bilstm_model.h5"
-    if not os.path.exists(model_path):
-        try:
-            with st.spinner("Downloading BiLSTM model... Please wait."):
-                file_id = "1qJnieGfXN3zz6vpqcYV7uNDVp5FFHCVf"
-                url = f"https://drive.google.com/uc?id={file_id}"
-                gdown.download(url, model_path, quiet=False)
-        except Exception as e:
-            st.error(f"Error downloading model: {e}")
-            return None
-    
+# Google Drive file IDs - REPLACE THESE WITH YOUR ACTUAL FILE IDs
+GOOGLE_DRIVE_CONFIG = {
+    "tokenizer_file_id": "1ki6vOTbTlPlPrICqOEP8WVW0Gyk9ipK8",  
+    "model_file_id": "1ExXPRLdIEkpbM6v74MpqsMSm1U3ZAid_",          
+}
+
+def download_from_gdrive(file_id, output_path, file_type="tokenizer"):
+    """Download files from Google Drive with progress tracking"""
     try:
-        return tf.keras.models.load_model(model_path)
+        url = f"https://drive.google.com/uc?id={file_id}"
+        
+        # Create directory if it doesn't exist
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        
+        with st.spinner(f"Downloading {file_type} from Google Drive..."):
+            # Download the file
+            gdown.download(url, output_path, quiet=False)
+            
+        if os.path.exists(output_path):
+            st.success(f"{file_type.title()} downloaded successfully!")
+            return True
+        else:
+            st.error(f"Failed to download {file_type}")
+            return False
+            
     except Exception as e:
-        st.error(f"Error loading model: {e}")
-        return None
+        st.error(f"Error downloading {file_type}: {str(e)}")
+        return False
+
+def extract_zip_file(zip_path, extract_to):
+    """Extract zip file to specified directory"""
+    try:
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(extract_to)
+        
+        # Remove the zip file after extraction
+        os.remove(zip_path)
+        return True
+        
+    except Exception as e:
+        st.error(f"Error extracting zip file: {str(e)}")
+        return False
 
 @st.cache_resource
-def load_custom_tokenizer():
-    tokenizer_path = "custom_tokenizer.pkl"
-    
-    # Download tokenizer if it doesn't exist
-    if not os.path.exists(tokenizer_path):
-        try:
-            with st.spinner("Downloading tokenizer... Please wait."):
-                file_id = "19Bwmqij3CLSYsGOT1Z7kVMovsuM8CHlY"
-                url = f"https://drive.google.com/uc?id={file_id}"
-                gdown.download(url, tokenizer_path, quiet=False)
-        except Exception as e:
-            st.error(f"Error downloading tokenizer: {e}")
-            return None
-    
-    # Load tokenizer with proper error handling
+def load_bert_model_and_tokenizer():
+    """Load BERT model and tokenizer with cloud deployment support"""
     try:
-        # First, try to load using CustomTokenizer.load() method
-        tokenizer = CustomTokenizer.load(tokenizer_path)
+        # Define paths for cloud deployment
+        tokenizer_path = "./bert_tokenizer"
+        model_path = "./bert_model"
         
-        # Verify it's properly loaded
-        if not hasattr(tokenizer, 'tokenizer') or not hasattr(tokenizer, 'max_len'):
-            st.error("Loaded tokenizer is missing required attributes")
-            return None
+        tokenizer_zip_path = "./bert_tokenizer.zip"
+        model_zip_path = "./bert_model.zip"
+        
+        tokenizer = None
+        model = None
+        
+        # Check if model files already exist
+        if os.path.exists(tokenizer_path) and os.path.exists(model_path):
+            st.info("Loading existing BERT model files...")
+            try:
+                tokenizer = BertTokenizer.from_pretrained(tokenizer_path)
+                model = TFBertForSequenceClassification.from_pretrained(model_path)
+                st.success("BERT model and tokenizer loaded successfully!")
+                return tokenizer, model
+            except Exception as e:
+                st.warning(f"Error loading existing files: {e}. Will download fresh copies.")
+                # Clean up corrupted files
+                if os.path.exists(tokenizer_path):
+                    shutil.rmtree(tokenizer_path)
+                if os.path.exists(model_path):
+                    shutil.rmtree(model_path)
+        
+        # Download and extract files if they don't exist or are corrupted
+        st.info("BERT model files not found. Downloading from Google Drive...")
+        
+        # Validate Google Drive file IDs
+        if (GOOGLE_DRIVE_CONFIG["tokenizer_file_id"] == "YOUR_TOKENIZER_ZIP_FILE_ID" or 
+            GOOGLE_DRIVE_CONFIG["model_file_id"] == "YOUR_MODEL_ZIP_FILE_ID"):
+            st.error("""
+            **Google Drive file IDs not configured!**
             
-        return tokenizer
-        
-    except Exception as e:
-        st.error(f"Error loading custom tokenizer with CustomTokenizer.load(): {e}")
-        
-        # Fallback: Try generic pickle loading
-        try:
-            with open(tokenizer_path, "rb") as handle:
-                tokenizer = pickle.load(handle)
+            Please follow these steps:
+            1. Upload your bert_tokenizer folder as a ZIP file to Google Drive
+            2. Upload your bert_model folder as a ZIP file to Google Drive  
+            3. Get the file IDs from the Google Drive sharing URLs
+            4. Replace the placeholder IDs in GOOGLE_DRIVE_CONFIG
             
-            # Check if it's a CustomTokenizer instance
-            if hasattr(tokenizer, 'texts_to_sequences') and hasattr(tokenizer, 'pad_sequences'):
-                return tokenizer
+            **How to get Google Drive file ID:**
+            - Share your file and copy the link
+            - The file ID is the long string between '/d/' and '/view' in the URL
+            - Example: https://drive.google.com/file/d/FILE_ID_HERE/view
+            """)
+            return None, None
+        
+        # Download tokenizer
+        if not os.path.exists(tokenizer_path):
+            if download_from_gdrive(GOOGLE_DRIVE_CONFIG["tokenizer_file_id"], 
+                                  tokenizer_zip_path, "tokenizer"):
+                if extract_zip_file(tokenizer_zip_path, "./"):
+                    st.success("Tokenizer extracted successfully!")
+                else:
+                    st.error("Failed to extract tokenizer")
+                    return None, None
             else:
-                st.error("Loaded object is not a valid CustomTokenizer instance")
-                return None
-                
-        except Exception as e2:
-            st.error(f"Error with fallback pickle loading: {e2}")
-            return None
+                return None, None
+        
+        # Download model
+        if not os.path.exists(model_path):
+            if download_from_gdrive(GOOGLE_DRIVE_CONFIG["model_file_id"], 
+                                  model_zip_path, "model"):
+                if extract_zip_file(model_zip_path, "./"):
+                    st.success("Model extracted successfully!")
+                else:
+                    st.error("Failed to extract model")
+                    return None, None
+            else:
+                return None, None
+        
+        # Load the model and tokenizer
+        st.info("Loading BERT model and tokenizer...")
+        tokenizer = BertTokenizer.from_pretrained(tokenizer_path)
+        model = TFBertForSequenceClassification.from_pretrained(model_path)
+        
+        st.success("BERT model and tokenizer loaded successfully!")
+        return tokenizer, model
+        
+    except Exception as e:
+        st.error(f"Error loading BERT model or tokenizer: {str(e)}")
+        st.error("""
+        **Troubleshooting tips:**
+        1. Ensure your Google Drive files are publicly accessible
+        2. Verify the file IDs are correct
+        3. Make sure you uploaded ZIP files, not folders
+        4. Check that the ZIP files contain the correct folder structure
+        """)
+        return None, None
 
-# Load model and tokenizer
-try:
-    model = load_bilstm_model()
-    tokenizer = load_custom_tokenizer()
-    MAX_LEN = 122  # Should match tokenizer.max_len
-    THRESHOLD = 0.5  # Threshold for binary classification
+# Load BERT model and tokenizer
+with st.spinner("Initializing BERT model..."):
+    tokenizer, model = load_bert_model_and_tokenizer()
 
-    # Check if model and tokenizer loaded successfully
-    if model is None or tokenizer is None:
-        st.error("Failed to load model or tokenizer. Please check if the files exist.")
-        st.stop()
-except Exception as e:
-    st.error(f"Error initializing model: {str(e)}")
-    st.info("Note: Model will be downloaded on first run. This may take a few minutes.")
+# BERT-specific constants
+MAX_LEN = 512  # BERT's maximum sequence length
+THRESHOLD = 0.5  # Threshold for binary classification
+
+# Check if model and tokenizer loaded successfully
+if model is None or tokenizer is None:
+    st.error("Failed to load BERT model or tokenizer.")
+    st.info("""
+    **Setup Instructions for Cloud Deployment:**
+    
+    1. **Prepare your model files:**
+       - Create a ZIP file of your bert_tokenizer folder
+       - Create a ZIP file of your bert_model folder
+    
+    2. **Upload to Google Drive:**
+       - Upload both ZIP files to Google Drive
+       - Make them publicly accessible (Anyone with the link can view)
+    
+    3. **Get file IDs:**
+       - Right-click each file → Share → Copy link
+       - Extract the file ID from URLs like: https://drive.google.com/file/d/FILE_ID_HERE/view
+    
+    4. **Update the code:**
+       - Replace YOUR_TOKENIZER_ZIP_FILE_ID with your tokenizer zip file ID
+       - Replace YOUR_MODEL_ZIP_FILE_ID with your model zip file ID
+    """)
     st.stop()
 
-def preprocess_text(text):
-    """Preprocess text and return sequences ready for prediction"""
-    processed_text = simple_preprocess_text(text)
-    sequences = tokenizer.texts_to_sequences([processed_text])
-    padded_sequences = tokenizer.pad_sequences(sequences)
-    return padded_sequences
+def preprocess_text_for_bert(text):
+    """Preprocess text for BERT (minimal preprocessing needed)"""
+    if not isinstance(text, str):
+        text = str(text)
+    
+    # BERT handles most preprocessing internally, but we can do basic cleaning
+    text = text.strip()
+    # Remove excessive whitespace
+    text = re.sub(r'\s+', ' ', text)
+    
+    return text
 
-def predict_toxicity(text, return_probabilities=False):
-    """Predict toxicity for a single text"""
-    processed = preprocess_text(text)
-    prediction = model.predict(processed, verbose=0)[0]
+def predict_toxicity_bert(text, return_probabilities=False):
+    """Predict toxicity for a single text using BERT"""
+    if not isinstance(text, str):
+        text = str(text)
+    
+    # Preprocess text
+    text = preprocess_text_for_bert(text)
+    
+    # Tokenize for BERT
+    inputs = tokenizer(
+        text,
+        return_tensors='tf',
+        max_length=MAX_LEN,
+        padding='max_length',
+        truncation=True
+    )
+    
+    # Get model prediction
+    outputs = model(inputs)
+    logits = outputs.logits
+    
+    # Apply sigmoid to get probabilities (for multi-label classification)
+    probabilities = tf.nn.sigmoid(logits).numpy()[0]
+    
     labels = ["toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"]
    
     if return_probabilities:
-        # Return probabilities for internal use - convert to regular Python float
-        return dict(zip(labels, [float(p) for p in prediction]))
+        # Return probabilities for internal use
+        return dict(zip(labels, [float(p) for p in probabilities]))
     else:
         # Return binary predictions (1/0) for user display
-        binary_preds = [1 if p > THRESHOLD else 0 for p in prediction]
+        binary_preds = [1 if p > THRESHOLD else 0 for p in probabilities]
         return dict(zip(labels, binary_preds))
 
 def create_bar_chart_with_proper_margins(categories, values, title, ylabel, colors, figsize=(10,6)):
@@ -568,48 +622,42 @@ def create_histogram_subplots_with_proper_margins(data_arrays, labels, title, th
 
     return fig
 
-def get_model_metrics():
+def get_bert_model_metrics():
     try:
-        # Helper to format shapes properly
-        def format_shape(shape):
-            if shape is None:
-                return None
-            if isinstance(shape, list):
-                return [tuple("Batch" if dim is None else dim for dim in s) for s in shape]
-            return tuple("Batch" if dim is None else dim for dim in shape)
-
+        # Get model configuration
+        config = model.config
+        
         # Model info
         model_info = {
-            "Model Type": "BiLSTM",
-            "Total Parameters": model.count_params(),
-            "Trainable Parameters": int(sum(tf.keras.backend.count_params(w) for w in model.trainable_weights)),
-            "Non-trainable Parameters": int(sum(tf.keras.backend.count_params(w) for w in model.non_trainable_weights)),
-            "Input Shape": format_shape(model.input_shape) if hasattr(model, 'input_shape') else None,
-            "Output Shape": format_shape(model.output_shape) if hasattr(model, 'output_shape') else None,
-            "Number of Layers": len(model.layers),
-            "Optimizer": model.optimizer.get_config()['name'] if hasattr(model, 'optimizer') else "Unknown",
-            "Loss Function": model.loss if isinstance(model.loss, str) else getattr(model.loss, '__name__', str(model.loss))
+            "Model Type": "BERT for Sequence Classification",
+            "Model Name": config.name_or_path if hasattr(config, 'name_or_path') else "bert-base-uncased",
+            "Vocabulary Size": config.vocab_size,
+            "Hidden Size": config.hidden_size,
+            "Number of Attention Heads": config.num_attention_heads,
+            "Number of Hidden Layers": config.num_hidden_layers,
+            "Max Position Embeddings": config.max_position_embeddings,
+            "Number of Labels": config.num_labels,
+            "Hidden Dropout": config.hidden_dropout_prob,
+            "Attention Dropout": config.attention_probs_dropout_prob,
         }
 
-        # Layer info
-        layer_info = []
-        for i, layer in enumerate(model.layers):
-            layer_info.append({
-                "Layer": i + 1,
-                "Name": layer.name,
-                "Type": layer.__class__.__name__,
-                "Parameters": layer.count_params()
-            })
+        # Layer info for BERT
+        layer_info = [
+            {"Component": "Embeddings", "Description": "Token, Position, and Segment Embeddings"},
+            {"Component": "Encoder Layers", "Description": f"{config.num_hidden_layers} Transformer Blocks"},
+            {"Component": "Attention Heads", "Description": f"{config.num_attention_heads} per layer"},
+            {"Component": "Classification Head", "Description": f"Linear layer for {config.num_labels} labels"},
+        ]
 
         return model_info, layer_info
 
     except Exception as e:
-        st.error(f"Error extracting model metrics: {e}")
+        st.error(f"Error extracting BERT model metrics: {e}")
         return {}, []
 
-def evaluate_model_performance():
-    """Evaluate model performance on test data and return actual metrics"""
-    # Create a more comprehensive test dataset
+def evaluate_bert_performance():
+    """Evaluate BERT model performance on test data"""
+    # Create comprehensive test dataset
     test_data = [
         # Clearly toxic comments
         {"text": "You are so stupid and ugly!", "labels": [1, 0, 1, 0, 1, 0]},
@@ -645,8 +693,8 @@ def evaluate_model_performance():
     # Get model predictions
     y_pred_proba = []
     for text in texts:
-        processed = preprocess_text(text)
-        prediction = model.predict(processed, verbose=0)[0]
+        prob_result = predict_toxicity_bert(text, return_probabilities=True)
+        prediction = [prob_result[label] for label in ["toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"]]
         y_pred_proba.append(prediction)
     
     y_pred_proba = np.array(y_pred_proba)
@@ -697,7 +745,7 @@ def evaluate_model_performance():
 
 # Navigation System
 def render_navigation():
-    st.markdown('<div class="nav-title">Toxic Comment Detection System</div>', unsafe_allow_html=True)
+    st.markdown('<div class="nav-title">BERT Toxic Comment Detection System</div>', unsafe_allow_html=True)
     
     # Navigation buttons
     pages = ['Home', 'Live Detection', 'Bulk Analysis', 'Model Insights', 'Test Cases']
@@ -725,15 +773,15 @@ if current_page == 'Home':
     # Hero Section
     st.markdown("""
     <div class="hero-section">
-        <div class="hero-title">🚀 Advanced Toxicity Detection</div>
+        <div class="hero-title">🚀 Advanced BERT Toxicity Detection</div>
         <div class="hero-subtitle">
-            Powered by cutting-edge BiLSTM neural networks, our AI system provides real-time toxicity detection 
-            across multiple categories with high precision and reliability.
+            Powered by state-of-the-art BERT transformer architecture, our AI system provides highly accurate 
+            toxicity detection across multiple categories with contextual understanding.
         </div>
     </div>
     """, unsafe_allow_html=True)
     
-    # Features Section - Using columns instead of HTML grid
+    # Features Section
     st.markdown("## ✨ Key Features")
 
     col1, col2 = st.columns(2)
@@ -742,10 +790,10 @@ if current_page == 'Home':
         st.markdown("""
         <div class="feature-card">
             <div class="feature-icon">⚡</div>
-            <div class="feature-title">Real-time Detection</div>
+            <div class="feature-title">BERT-Powered Detection</div>
             <div class="feature-description">
-                Instant analysis of text content with millisecond response times. 
-                Get immediate feedback on toxicity levels across six different categories.
+                State-of-the-art transformer architecture with bidirectional context understanding 
+                for superior toxicity detection accuracy.
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -767,7 +815,7 @@ if current_page == 'Home':
             <div class="feature-icon">📈</div>
             <div class="feature-title">Model Performance</div>
             <div class="feature-description">
-                Comprehensive model insights with accuracy metrics, confusion matrices, 
+                Comprehensive BERT model insights with attention mechanisms, transformer layers,
                 and detailed performance analysis across all toxicity categories.
             </div>
         </div>
@@ -778,8 +826,8 @@ if current_page == 'Home':
             <div class="feature-icon">🧪</div>
             <div class="feature-title">Sample Test Cases</div>
             <div class="feature-description">
-                Pre-loaded test comments to explore model behavior and understand 
-                classification patterns across different content types.
+                Pre-loaded test comments to explore BERT model behavior and understand 
+                classification patterns with contextual awareness.
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -790,14 +838,14 @@ if current_page == 'Home':
     st.markdown("""
     <div style="text-align: center; max-width: 800px; margin: 30px auto; padding: 30px; background: rgba(255, 255, 255, 0.95); border-radius: 20px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.06);">
         <p style="color: #666; font-size: 18px; line-height: 1.6; margin-bottom: 30px;">
-            Ready to start detecting toxic content? Choose from our powerful tools above to begin your analysis journey.
+            Ready to start detecting toxic content with BERT? Choose from our powerful tools above to begin your analysis journey.
         </p>
         <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: 25px;">
             <div style="background: linear-gradient(135deg, #9370DB 0%, #8A2BE2 100%); color: white; padding: 15px 25px; border-radius: 25px; font-weight: 500; box-shadow: 0 4px 15px rgba(147, 112, 219, 0.3);">
                 ⚡ Live Detection - For single comments
             </div>
             <div style="background: linear-gradient(135deg, #9370DB 0%, #8A2BE2 100%); color: white; padding: 15px 25px; border-radius: 25px; font-weight: 500; box-shadow: 0 4px 15px rgba(147, 112, 219, 0.3);">
-                📊 Bulk Analysis - For CSV files
+                📊 Bulk Analysis For CSV files
             </div>
         </div>
     </div>
@@ -806,11 +854,11 @@ if current_page == 'Home':
     # Stats Section
     st.markdown("""
     <div class="stats-container">
-        <h2 style="margin-bottom: 20px; font-size: 32px;">System Performance</h2>
+        <h2 style="margin-bottom: 20px; font-size: 32px;">BERT System Performance</h2>
         <div class="stats-grid">
             <div class="stat-item">
-                <div class="stat-number">122</div>
-                <div class="stat-label">Max Sequence Length</div>
+                <div class="stat-number">512</div>
+                <div class="stat-label">Max Token Length</div>
             </div>
             <div class="stat-item">
                 <div class="stat-number">6</div>
@@ -821,15 +869,15 @@ if current_page == 'Home':
                 <div class="stat-label">Classification Threshold</div>
             </div>
             <div class="stat-item">
-                <div class="stat-number">&lt; 100ms</div>
-                <div class="stat-label">Response Time</div>
+                <div class="stat-number">12</div>
+                <div class="stat-label">Transformer Layers</div>
             </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
     
-    # How it Works Section - Using Streamlit columns
-    st.markdown("## 🔍 How It Works")
+    # How it Works Section
+    st.markdown("## 🔍 How BERT Works")
     
     col1, col2, col3 = st.columns(3)
     
@@ -838,7 +886,7 @@ if current_page == 'Home':
         <div style="text-align: center; padding: 30px 20px; background: rgba(255, 255, 255, 0.95); border-radius: 15px; margin: 10px 0; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);">
             <div style="font-size: 48px; margin-bottom: 20px;">📝</div>
             <h4 style="color: #9370DB; margin-bottom: 15px;">1. Input Text</h4>
-            <p style="color: #666; line-height: 1.6;">Enter your comment or upload a CSV file with multiple comments for analysis.</p>
+            <p style="color: #666; line-height: 1.6;">Enter your comment or upload a CSV file. BERT tokenizes and processes the text with attention mechanisms.</p>
         </div>
         """, unsafe_allow_html=True)
     
@@ -846,8 +894,8 @@ if current_page == 'Home':
         st.markdown("""
         <div style="text-align: center; padding: 30px 20px; background: rgba(255, 255, 255, 0.95); border-radius: 15px; margin: 10px 0; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);">
             <div style="font-size: 48px; margin-bottom: 20px;">⚙️</div>
-            <h4 style="color: #9370DB; margin-bottom: 15px;">2. AI Processing</h4>
-            <p style="color: #666; line-height: 1.6;">Our BiLSTM model analyzes the text using advanced natural language processing.</p>
+            <h4 style="color: #9370DB; margin-bottom: 15px;">2. BERT Processing</h4>
+            <p style="color: #666; line-height: 1.6;">12 transformer layers with self-attention analyze bidirectional context for deep understanding.</p>
         </div>
         """, unsafe_allow_html=True)
     
@@ -856,14 +904,14 @@ if current_page == 'Home':
         <div style="text-align: center; padding: 30px 20px; background: rgba(255, 255, 255, 0.95); border-radius: 15px; margin: 10px 0; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);">
             <div style="font-size: 48px; margin-bottom: 20px;">📊</div>
             <h4 style="color: #9370DB; margin-bottom: 15px;">3. Results</h4>
-            <p style="color: #666; line-height: 1.6;">Get instant binary classifications (1/0) for six different toxicity categories.</p>
+            <p style="color: #666; line-height: 1.6;">Get precise binary classifications (1/0) for six different toxicity categories with confidence scores.</p>
         </div>
         """, unsafe_allow_html=True)
 
 # LIVE DETECTION PAGE
 elif current_page == 'Live Detection':
-    st.header("⚡ Real-time Toxicity Detection")
-    st.markdown("*Enter one or more comments (each line will be analyzed separately)*")
+    st.header("⚡ Real-time BERT Toxicity Detection")
+    st.markdown("*Enter one or more comments (each line will be analyzed separately using BERT)*")
 
     # Multi-line input box
     user_input = st.text_area(
@@ -874,7 +922,7 @@ elif current_page == 'Live Detection':
 
     col1, col2 = st.columns([1, 1])
     with col1:
-        predict_button = st.button("🔍 Analyze Comments", type="primary", use_container_width=True)
+        predict_button = st.button("🔍 Analyze with BERT", type="primary", use_container_width=True)
     with col2:
         show_probabilities = st.checkbox("Show Probabilities")
 
@@ -883,16 +931,16 @@ elif current_page == 'Live Detection':
         comments = [c.strip() for c in user_input.split("\n") if c.strip()]
         
         if not comments:
-            st.warning("Please enter at least one valid comment.")
+            st.warning("⚠️ Please enter at least one valid comment.")
         else:
             for idx, comment in enumerate(comments, start=1):
-                st.subheader(f"Comment {idx}:")
+                st.subheader(f"💬 Comment {idx}:")
                 
-                with st.spinner("Analyzing..."):
+                with st.spinner("Analyzing with BERT..."):
                     # Get binary predictions
-                    binary_result = predict_toxicity(comment, return_probabilities=False)
+                    binary_result = predict_toxicity_bert(comment, return_probabilities=False)
                     # Get probabilities
-                    prob_result = predict_toxicity(comment, return_probabilities=True)
+                    prob_result = predict_toxicity_bert(comment, return_probabilities=True)
 
                 # Layout columns
                 col1, col2 = st.columns([1, 1])
@@ -916,24 +964,14 @@ elif current_page == 'Live Detection':
                 # Overall toxicity indicator
                 toxic_count = sum(binary_result.values())
                 if toxic_count > 0:
-                    st.error(f"**TOXIC CONTENT DETECTED** - {toxic_count} toxic categories identified!")
+                    st.error(f"**TOXIC CONTENT DETECTED** - {toxic_count} toxic categories identified by BERT!")
                 else:
-                    st.success("**CLEAN CONTENT** - No toxicity detected!")
-                    
+                    st.success("**CLEAN CONTENT** - No toxicity detected by BERT!")
+
 # BULK ANALYSIS PAGE
 elif current_page == 'Bulk Analysis':
-    st.header("📊 Bulk CSV Analysis")
-    st.markdown("*Upload a CSV file with 'text' column to get predictions for all comments.*")
-    
-    # CSS Fix for making tables stretch full width
-    st.markdown(
-        """
-        <style>
-        .stDataFrame {width: 100% !important;}
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+    st.header("📊 Bulk CSV Analysis with BERT")
+    st.markdown("*Upload a CSV file with 'text' column to get BERT predictions for all comments.*")
     
     uploaded_file = st.file_uploader("Upload CSV file", type=["csv"], help="CSV must contain a column named 'text'")
     
@@ -947,19 +985,14 @@ elif current_page == 'Bulk Analysis':
             else:
                 st.success(f"File uploaded successfully! Found **{len(data)}** rows.")
                 
-                # Wider Preview Data
-                with st.expander("Preview Data", expanded=True):
-                    st.dataframe(
-                        data.head(10),
-                        use_container_width=True,
-                        height=400
-                    )
+                with st.expander("Preview Data"):
+                    st.dataframe(data.head(10))
 
                 col1, col2 = st.columns([1, 1])
                 with col1:
                     include_probabilities = st.checkbox("Include probability scores", help="Add probability columns alongside binary predictions")
                 
-                if st.button("Run Bulk Predictions", type="primary"):
+                if st.button("Run BERT Bulk Predictions", type="primary"):
                     # Predictions with progress bar
                     binary_predictions = []
                     prob_predictions = []
@@ -968,15 +1001,15 @@ elif current_page == 'Bulk Analysis':
                     status_text = st.empty()
                     
                     for i, text in enumerate(data["text"].fillna("")):
-                        binary_preds = predict_toxicity(text, return_probabilities=False)
+                        binary_preds = predict_toxicity_bert(text, return_probabilities=False)
                         binary_predictions.append(binary_preds)
                         
                         if include_probabilities:
-                            prob_preds = predict_toxicity(text, return_probabilities=True)
+                            prob_preds = predict_toxicity_bert(text, return_probabilities=True)
                             prob_predictions.append(prob_preds)
                         
                         progress_bar.progress((i + 1) / len(data))
-                        status_text.text(f'Processing: {i + 1}/{len(data)} comments')
+                        status_text.text(f'Processing with BERT: {i + 1}/{len(data)} comments')
 
                     # Create results dataframe
                     binary_df = pd.DataFrame(binary_predictions)
@@ -987,15 +1020,11 @@ elif current_page == 'Bulk Analysis':
                         prob_df.columns = [f"{col}_prob" for col in prob_df.columns]
                         result_df = pd.concat([result_df, prob_df], axis=1)
 
-                    st.success("Predictions Completed!")
+                    st.success("BERT Predictions Completed!")
                     
-                    # Wider Preview Results
-                    st.subheader("Preview Results")
-                    st.dataframe(
-                        result_df.head(10),
-                        use_container_width=True,
-                        height=400
-                    )
+                    # Show results preview
+                    with st.expander("Preview Results"):
+                        st.dataframe(result_df.head(10), use_container_width=True)
 
                     # Summary statistics
                     st.subheader("Summary Statistics")
@@ -1022,7 +1051,7 @@ elif current_page == 'Bulk Analysis':
                     fig = create_bar_chart_with_proper_margins(
                         categories=[label.replace('_', ' ').title() for label in category_counts.index],
                         values=category_counts.values,
-                        title="Toxic Comments by Category",
+                        title="Toxic Comments by Category (BERT Analysis)",
                         ylabel="Number of Toxic Comments",
                         colors=['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57', '#FF9FF3']
                     )
@@ -1033,64 +1062,63 @@ elif current_page == 'Bulk Analysis':
                     # Download option
                     csv = result_df.to_csv(index=False).encode("utf-8")
                     st.download_button(
-                        "Download Predictions as CSV", 
+                        "Download BERT Predictions as CSV", 
                         csv, 
-                        "toxicity_predictions.csv", 
+                        "bert_toxicity_predictions.csv", 
                         "text/csv",
                         type="primary",
-                        help="Download the complete results with binary predictions"
+                        help="Download the complete results with BERT binary predictions"
                     )
                     
         except Exception as e:
             st.error(f"Error processing file: {e}")
 
-
 # MODEL INSIGHTS PAGE
 elif current_page == 'Model Insights':
-    st.header("📈 Model Architecture & Performance")
-    st.markdown("*Explore model architecture, parameters, and performance metrics extracted directly from the trained model.*")
+    st.header("📈 BERT Model Architecture & Performance")
+    st.markdown("*Explore BERT transformer architecture, parameters, and performance metrics.*")
     
-    # Get model metrics
-    model_info, layer_info = get_model_metrics()
+    # Get BERT model metrics
+    model_info, layer_info = get_bert_model_metrics()
     
     # Model Architecture
-    st.subheader("Model Architecture")
+    st.subheader("BERT Model Architecture")
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.metric("Total Parameters", f"{model_info.get('Total Parameters', 'N/A'):,}")
+        st.metric("Vocabulary Size", f"{model_info.get('Vocabulary Size', 'N/A'):,}")
     with col2:
-        st.metric("Trainable Parameters", f"{model_info.get('Trainable Parameters', 'N/A'):,}")
+        st.metric("Hidden Size", model_info.get('Hidden Size', 'N/A'))
     with col3:
-        st.metric("Number of Layers", model_info.get('Number of Layers', 'N/A'))
+        st.metric("Attention Heads", model_info.get('Number of Attention Heads', 'N/A'))
     
     # Model Details
-    st.subheader("Model Configuration")
+    st.subheader("BERT Configuration")
     col1, col2 = st.columns(2)
     
     with col1:
         st.markdown("**Model Details:**")
         for key, value in model_info.items():
-            if key not in ['Total Parameters', 'Trainable Parameters', 'Number of Layers']:
+            if key not in ['Vocabulary Size', 'Hidden Size', 'Number of Attention Heads']:
                 st.write(f"- **{key}:** {value}")
     
     with col2:
-        st.markdown("**Layer Architecture:**")
+        st.markdown("**Architecture Components:**")
         if layer_info:
             layer_df = pd.DataFrame(layer_info)
             st.dataframe(layer_df, use_container_width=True)
     
     # Performance Analysis with Test Data
-    st.subheader("Performance Evaluation")
+    st.subheader("BERT Performance Evaluation")
     
-    if st.button("Run Performance Analysis", type="primary"):
-        with st.spinner("Evaluating model performance..."):
-            evaluation_results = evaluate_model_performance()
+    if st.button("Run BERT Performance Analysis", type="primary"):
+        with st.spinner("Evaluating BERT model performance..."):
+            evaluation_results = evaluate_bert_performance()
         
-        st.success("Evaluation completed!")
+        st.success("BERT evaluation completed!")
         
         # Overall Performance Metrics
-        st.subheader("Overall Performance")
+        st.subheader("Overall BERT Performance")
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
@@ -1125,7 +1153,7 @@ elif current_page == 'Model Insights':
         st.dataframe(metrics_df, use_container_width=True)
         
         # Visualization
-        st.subheader("Performance Visualization")
+        st.subheader("BERT Performance Visualization")
         
         col1, col2 = st.columns(2)
         
@@ -1137,7 +1165,7 @@ elif current_page == 'Model Insights':
             fig1 = create_bar_chart_with_proper_margins(
                 categories=categories,
                 values=accuracies,
-                title="Accuracy by Category",
+                title="BERT Accuracy by Category",
                 ylabel="Accuracy",
                 colors=['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57', '#FF9FF3'],
                 figsize=(10, 8)
@@ -1156,7 +1184,7 @@ elif current_page == 'Model Insights':
             fig2 = create_bar_chart_with_proper_margins(
                 categories=categories,
                 values=f1_scores,
-                title="F1-Score by Category",
+                title="BERT F1-Score by Category",
                 ylabel="F1-Score",
                 colors=['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57', '#FF9FF3'],
                 figsize=(10, 8)
@@ -1169,8 +1197,8 @@ elif current_page == 'Model Insights':
             plt.close()
 
         # Detailed Test Results
-        st.subheader("Detailed Test Results")
-        with st.expander("View All Test Predictions vs Ground Truth"):
+        st.subheader("Detailed BERT Test Results")
+        with st.expander("View All BERT Test Predictions vs Ground Truth"):
             test_results = []
             for i, item in enumerate(evaluation_results['test_data']):
                 result = {
@@ -1196,7 +1224,7 @@ elif current_page == 'Model Insights':
             st.dataframe(test_df.drop('Full_Comment', axis=1), use_container_width=True)
 
         # Model Confidence Analysis
-        st.subheader("Model Confidence Analysis")
+        st.subheader("BERT Model Confidence Analysis")
         
         # Calculate confidence metrics
         high_confidence = 0
@@ -1221,7 +1249,7 @@ elif current_page == 'Model Insights':
             st.metric("Low Confidence (<60%)", low_confidence)
         
         # Probability Distribution
-        st.subheader("Probability Score Distribution")
+        st.subheader("BERT Probability Score Distribution")
         
         # Prepare data for histogram
         prob_data = []
@@ -1231,7 +1259,7 @@ elif current_page == 'Model Insights':
         fig3 = create_histogram_subplots_with_proper_margins(
             data_arrays=prob_data,
             labels=labels,
-            title="Probability Score Distribution by Category",
+            title="BERT Probability Score Distribution by Category",
             threshold=THRESHOLD,
             figsize=(16, 12)
         )
@@ -1241,8 +1269,8 @@ elif current_page == 'Model Insights':
 
 # TEST CASES PAGE
 elif current_page == 'Test Cases':
-    st.header("🧪 Sample Test Cases")
-    st.markdown("*Click on any comment below to see its binary toxicity predictions (1 = Toxic, 0 = Non-toxic).*")
+    st.header("🧪 Sample Test Cases with BERT")
+    st.markdown("*Click on any comment below to see its BERT toxicity predictions (1 = Toxic, 0 = Non-toxic).*")
     
     sample_comments = [
         "You are so stupid and ugly!",
@@ -1265,14 +1293,14 @@ elif current_page == 'Test Cases':
     # Option to analyze all at once
     col1, col2 = st.columns([1, 1])
     with col1:
-        if st.button("🔍 Analyze All Comments", type="primary"):
-            st.subheader("Bulk Analysis Results")
+        if st.button("🔍 Analyze All Comments with BERT", type="primary"):
+            st.subheader("BERT Bulk Analysis Results")
             
             all_results = []
             progress_bar = st.progress(0)
             
             for i, comment in enumerate(sample_comments):
-                binary_pred = predict_toxicity(comment, return_probabilities=False)
+                binary_pred = predict_toxicity_bert(comment, return_probabilities=False)
                 result = {"Comment": comment[:50] + "..." if len(comment) > 50 else comment}
                 result.update(binary_pred)
                 result["Total_Toxic_Categories"] = sum(binary_pred.values())
@@ -1286,13 +1314,13 @@ elif current_page == 'Test Cases':
             
             # Summary
             toxic_count = (results_df['toxic'] == 1).sum()
-            st.info(f"**Summary:** {toxic_count}/{len(sample_comments)} comments detected as toxic")
+            st.info(f"**BERT Summary:** {toxic_count}/{len(sample_comments)} comments detected as toxic")
     
     with col2:
         show_probabilities = st.checkbox("Show probability scores", key="sample_probs")
     
     st.markdown("---")
-    st.subheader("🔍 Individual Comment Analysis")
+    st.subheader("🔍 Individual Comment Analysis with BERT")
     
     for i, comment in enumerate(sample_comments):
         with st.expander(f"Comment {i+1}: {comment[:60]}{'...' if len(comment) > 60 else ''}"):
@@ -1301,10 +1329,10 @@ elif current_page == 'Test Cases':
             col1, col2 = st.columns([1, 2])
             
             with col1:
-                if st.button(f"🔍 Analyze", key=f"analyze_{i}"):
-                    with st.spinner("Analyzing..."):
-                        binary_preds = predict_toxicity(comment, return_probabilities=False)
-                        prob_preds = predict_toxicity(comment, return_probabilities=True)
+                if st.button(f"🔍 Analyze with BERT", key=f"analyze_{i}"):
+                    with st.spinner("Analyzing with BERT..."):
+                        binary_preds = predict_toxicity_bert(comment, return_probabilities=False)
+                        prob_preds = predict_toxicity_bert(comment, return_probabilities=True)
                     
                     # Store results in session state
                     st.session_state[f"binary_{i}"] = binary_preds
@@ -1316,7 +1344,7 @@ elif current_page == 'Test Cases':
                     binary_preds = st.session_state[f"binary_{i}"]
                     prob_preds = st.session_state[f"prob_{i}"]
                     
-                    st.write("**Binary Classifications:**")
+                    st.write("**BERT Binary Classifications:**")
                     toxic_count = 0
                     for label, prediction in binary_preds.items():
                         if prediction == 1:
@@ -1326,7 +1354,7 @@ elif current_page == 'Test Cases':
                             st.success(f"{label.replace('_', ' ').title()}: **{prediction}**")
                     
                     if show_probabilities:
-                        st.write("**Probability Scores:**")
+                        st.write("**BERT Probability Scores:**")
                         for label, score in prob_preds.items():
                             # Convert to Python float for display
                             score_float = float(score)
@@ -1334,6 +1362,6 @@ elif current_page == 'Test Cases':
                     
                     # Overall assessment
                     if toxic_count > 0:
-                        st.error(f"**TOXIC** - {toxic_count} categories detected!")
+                        st.error(f"**TOXIC** - {toxic_count} categories detected by BERT!")
                     else:
-                        st.success("**CLEAN** - No toxicity detected!")
+                        st.success("**CLEAN** - No toxicity detected by BERT!")
