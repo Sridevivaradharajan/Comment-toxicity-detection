@@ -357,8 +357,8 @@ if 'current_page' not in st.session_state:
 
 # Google Drive file IDs - REPLACE THESE WITH YOUR ACTUAL FILE IDs
 GOOGLE_DRIVE_CONFIG = {
-    "tokenizer_file_id": "1ki6vOTbTlPlPrICqOEP8WVW0Gyk9ipK8",  
-    "model_file_id": "1ExXPRLdIEkpbM6v74MpqsMSm1U3ZAid_",          
+    "tokenizer_file_id": "1aNOOr1d0-xXBbOeMkYLIJKqFm8EeR4ss",  
+    "model_file_id": "1LHUCMJIONAjO1VJWg3icUeLiubH6sjfT",          
 }
 
 def download_from_gdrive(file_id, output_path, file_type="tokenizer"):
@@ -1365,3 +1365,4 @@ elif current_page == 'Test Cases':
                         st.error(f"**TOXIC** - {toxic_count} categories detected by BERT!")
                     else:
                         st.success("**CLEAN** - No toxicity detected by BERT!")
+
