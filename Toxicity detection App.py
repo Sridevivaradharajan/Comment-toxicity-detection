@@ -24,15 +24,36 @@ st.markdown("""
     /* Import Google Fonts */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     
+    /* Force background colors with higher specificity for Streamlit Cloud */
+    .stApp, .stApp > div, .stApp > div > div {
+        background-color: #DDD4FF !important;
+        background-image: none !important;
+    }
+    
+    /* Alternative selectors for different Streamlit versions */
+    .main, .block-container, [data-testid="stAppViewContainer"] {
+        background-color: #DDD4FF !important;
+    }
+    
+    /* Root element background */
+    html, body {
+        background-color: #DDD4FF !important;
+    }
+    
     /* Global Styles */
     .main {
         font-family: 'Inter', sans-serif;
         background-color: #DDD4FF !important;
     }
     
-    /* Streamlit main container background */
-    .stApp {
+    /* Streamlit main container background - multiple selectors for compatibility */
+    .stApp, 
+    [data-testid="stApp"],
+    [data-testid="stAppViewContainer"],
+    .css-18e3th9,
+    .css-1d391kg {
         background-color: #DDD4FF !important;
+        background-image: none !important;
     }
     
     /* Main content area - Pink Gradient Container */
@@ -368,7 +389,6 @@ def download_folder_from_gdrive(folder_id, output_path, file_type="model"):
         os.makedirs(output_path, exist_ok=True)
         with st.spinner(f"Downloading {file_type} folder from Google Drive..."):
             gdown.download_folder(url, quiet=False, use_cookies=False, output=output_path)
-        st.success(f"{file_type.title()} folder downloaded successfully!")
         return True
     except Exception as e:
         st.error(f"Error downloading {file_type} folder: {e}")
@@ -413,8 +433,7 @@ def load_bert_model_and_tokenizer():
         st.info("Loading BERT model and tokenizer...")
         tokenizer = BertTokenizer.from_pretrained(tokenizer_path, local_files_only=True)
         model = TFBertForSequenceClassification.from_pretrained(model_path, num_labels=6, local_files_only=True)
-
-        st.success("BERT model and tokenizer loaded successfully!")
+        
         return tokenizer, model
 
     except Exception as e:
@@ -1296,6 +1315,7 @@ elif current_page == 'Test Cases':
                         st.error(f"**TOXIC** - {toxic_count} categories detected by BERT!")
                     else:
                         st.success("**CLEAN** - No toxicity detected by BERT!")
+
 
 
 
