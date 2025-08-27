@@ -10,3 +10,4 @@ nltk>=3.8.1
 gdown>=4.7.0
 contractions==0.1.73
 emoji==2.12.1
+transformers>=4.30
