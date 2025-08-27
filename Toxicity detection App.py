@@ -894,10 +894,11 @@ elif current_page == 'Live Detection':
                 else:
                     st.success("**CLEAN CONTENT** - No toxicity detected by BERT!")
 
+
 # BULK ANALYSIS PAGE
 elif current_page == 'Bulk Analysis':
-    st.header("📊 Bulk CSV Analysis with BERT")
-    st.markdown("*Upload a CSV file with 'text' column to get BERT predictions for all comments.*")
+    st.header("📊 Bulk CSV Analysis")
+    st.markdown("Upload a CSV file with 'text' column to get predictions for all comments.")
     
     uploaded_file = st.file_uploader("Upload CSV file", type=["csv"], help="CSV must contain a column named 'text'")
     
@@ -909,7 +910,7 @@ elif current_page == 'Bulk Analysis':
                 st.error("CSV must have a column named 'text'")
                 st.info("Available columns: " + ", ".join(data.columns.tolist()))
             else:
-                st.success(f"File uploaded successfully! Found **{len(data)}** rows.")
+                st.success(f"File uploaded successfully! Found *{len(data)}* rows.")
                 
                 with st.expander("Preview Data"):
                     st.dataframe(data.head(10))
@@ -918,7 +919,7 @@ elif current_page == 'Bulk Analysis':
                 with col1:
                     include_probabilities = st.checkbox("Include probability scores", help="Add probability columns alongside binary predictions")
                 
-                if st.button("Run BERT Bulk Predictions", type="primary"):
+                if st.button("Run Bulk Predictions", type="primary"):
                     # Predictions with progress bar
                     binary_predictions = []
                     prob_predictions = []
@@ -927,15 +928,15 @@ elif current_page == 'Bulk Analysis':
                     status_text = st.empty()
                     
                     for i, text in enumerate(data["text"].fillna("")):
-                        binary_preds = predict_toxicity_bert(text, return_probabilities=False)
+                        binary_preds = predict_toxicity(text, return_probabilities=False)
                         binary_predictions.append(binary_preds)
                         
                         if include_probabilities:
-                            prob_preds = predict_toxicity_bert(text, return_probabilities=True)
+                            prob_preds = predict_toxicity(text, return_probabilities=True)
                             prob_predictions.append(prob_preds)
                         
                         progress_bar.progress((i + 1) / len(data))
-                        status_text.text(f'Processing with BERT: {i + 1}/{len(data)} comments')
+                        status_text.text(f'Processing: {i + 1}/{len(data)} comments')
 
                     # Create results dataframe
                     binary_df = pd.DataFrame(binary_predictions)
@@ -946,7 +947,7 @@ elif current_page == 'Bulk Analysis':
                         prob_df.columns = [f"{col}_prob" for col in prob_df.columns]
                         result_df = pd.concat([result_df, prob_df], axis=1)
 
-                    st.success("BERT Predictions Completed!")
+                    st.success("Predictions Completed!")
                     
                     # Show results preview
                     with st.expander("Preview Results"):
@@ -977,7 +978,7 @@ elif current_page == 'Bulk Analysis':
                     fig = create_bar_chart_with_proper_margins(
                         categories=[label.replace('_', ' ').title() for label in category_counts.index],
                         values=category_counts.values,
-                        title="Toxic Comments by Category (BERT Analysis)",
+                        title="Toxic Comments by Category",
                         ylabel="Number of Toxic Comments",
                         colors=['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57', '#FF9FF3']
                     )
@@ -988,12 +989,12 @@ elif current_page == 'Bulk Analysis':
                     # Download option
                     csv = result_df.to_csv(index=False).encode("utf-8")
                     st.download_button(
-                        "Download BERT Predictions as CSV", 
+                        "Download Predictions as CSV", 
                         csv, 
-                        "bert_toxicity_predictions.csv", 
+                        "toxicity_predictions.csv", 
                         "text/csv",
                         type="primary",
-                        help="Download the complete results with BERT binary predictions"
+                        help="Download the complete results with binary predictions"
                     )
                     
         except Exception as e:
@@ -1291,6 +1292,7 @@ elif current_page == 'Test Cases':
                         st.error(f"**TOXIC** - {toxic_count} categories detected by BERT!")
                     else:
                         st.success("**CLEAN** - No toxicity detected by BERT!")
+
 
 
 
