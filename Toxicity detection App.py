@@ -18,27 +18,11 @@ from pathlib import Path
 
 st.set_page_config(page_title="Toxic Comment Classifier", layout="wide")
 
-# Add CSS styling with #DDD4FF background and pink gradient accents for containers and buttons
+# Add CSS styling with #DDD4FF background and purple gradient accents for containers and buttons
 st.markdown("""
 <style>
     /* Import Google Fonts */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    
-    /* Force background colors with higher specificity for Streamlit Cloud */
-    .stApp, .stApp > div, .stApp > div > div {
-        background-color: #DDD4FF !important;
-        background-image: none !important;
-    }
-    
-    /* Alternative selectors for different Streamlit versions */
-    .main, .block-container, [data-testid="stAppViewContainer"] {
-        background-color: #DDD4FF !important;
-    }
-    
-    /* Root element background */
-    html, body {
-        background-color: #DDD4FF !important;
-    }
     
     /* Global Styles */
     .main {
@@ -46,24 +30,18 @@ st.markdown("""
         background-color: #DDD4FF !important;
     }
     
-    /* Streamlit main container background - multiple selectors for compatibility */
-    .stApp, 
-    [data-testid="stApp"],
-    [data-testid="stAppViewContainer"],
-    .css-18e3th9,
-    .css-1d391kg {
+    /* Streamlit main container background */
+    /* Global background stays lavender */
+    .stApp {
         background-color: #DDD4FF !important;
-        background-image: none !important;
     }
-    
-    /* Main content area - Pink Gradient Container */
+
+    /* Keep block container transparent so lavender shows */
     .main .block-container {
-        background: linear-gradient(135deg, #F8BBD0 0%, #F48FB1 100%) !important;
+        background: transparent !important;
         border-radius: 15px;
         padding: 2rem;
         margin: 1rem auto;
-        box-shadow: 0 8px 25px rgba(244, 143, 177, 0.2);
-        border: 1px solid rgba(244, 143, 177, 0.3);
     }
     
     /* Navigation Styles */
@@ -1313,6 +1291,7 @@ elif current_page == 'Test Cases':
                         st.error(f"**TOXIC** - {toxic_count} categories detected by BERT!")
                     else:
                         st.success("**CLEAN** - No toxicity detected by BERT!")
+
 
 
 
