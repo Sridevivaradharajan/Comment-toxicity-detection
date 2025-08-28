@@ -42,7 +42,7 @@ streamlit run app.py
 ```
 ---
 
-## 🏆 Model Ranking & Performance
+## Model Ranking & Performance
 
 Based on evaluation across multiple metrics, the models were ranked as follows:
 
