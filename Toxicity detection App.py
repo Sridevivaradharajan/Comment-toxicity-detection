@@ -857,10 +857,10 @@ elif current_page == 'Live Detection':
         comments = [c.strip() for c in user_input.split("\n") if c.strip()]
         
         if not comments:
-            st.warning("⚠️ Please enter at least one valid comment.")
+            st.warning("Please enter at least one valid comment.")
         else:
             for idx, comment in enumerate(comments, start=1):
-                st.subheader(f"💬 Comment {idx}:")
+                st.subheader(f"Comment {idx}:")
                 
                 with st.spinner("Analyzing with BERT..."):
                     # Get binary predictions
@@ -1309,6 +1309,7 @@ elif current_page == 'Test Cases':
                         st.error(f"**TOXIC** - {toxic_count} categories detected by BERT!")
                     else:
                         st.success("**CLEAN** - No toxicity detected by BERT!")
+
 
 
 
