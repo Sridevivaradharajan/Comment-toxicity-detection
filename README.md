@@ -4,7 +4,7 @@ This project is a **Deep learning based web application** that classifies commen
 
 ---
 
-## 🚀 Features
+## Features
 - Classifies comments into multiple toxicity categories:
   - Toxic
   - Severe Toxic
@@ -23,7 +23,7 @@ This project is a **Deep learning based web application** that classifies commen
 
 ---
 
-## ⚙️ Installation
+## Installation
 
 1. Clone the repository:
 ```bash
@@ -40,11 +40,6 @@ pip install -r requirements.txt
 ```bash
 streamlit run app.py
 ```
-
----
-
-Here’s a clean **README section** you can use with the ranking table from your Excel file:
-
 ---
 
 ## 🏆 Model Ranking & Performance
@@ -60,7 +55,7 @@ Based on evaluation across multiple metrics, the models were ranked as follows:
 
 ---
 
-## 📚 Tech Stack
+## Tech Stack
 
 * **Python 3.10**
 * **TensorFlow / Keras**
@@ -70,7 +65,7 @@ Based on evaluation across multiple metrics, the models were ranked as follows:
 
 ---
 
-## 📜 License
+## License
 
-This project is licensed under the **MIT License**.
+This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0) License.
 
