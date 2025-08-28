@@ -27,7 +27,7 @@ This project is a **Deep learning based web application** that classifies commen
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/Sridevivaradharajan/comment-toxicity.git
+git clone https://github.com/Sridevivaradharajan/Comment-toxicity-detection.git
 cd comment-toxicity
 ````
 
